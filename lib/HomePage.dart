@@ -2,11 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:syncfusion_flutter_charts/charts.dart';
 import 'package:flutter/cupertino.dart';
 
+import 'main.dart';
 import 'Pemasukan.dart';
 
 class HomePage extends StatelessWidget {
-  final Color warnaUtama = Color(0xFFBBDEFB);
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -17,7 +16,7 @@ class HomePage extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Card(
-                color: warnaUtama,
+                color: WarnaUtama,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(20),
                 ),
