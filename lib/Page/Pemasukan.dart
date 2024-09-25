@@ -3,7 +3,7 @@ import 'package:intl/intl.dart'; // Add this import at the top of your file
 import 'package:flutter/services.dart'; // Add this import at the top of your file
 import 'package:supabase_flutter/supabase_flutter.dart'; // Pastikan Anda mengimpor supabase client
 
-import 'main.dart';
+import '../main.dart';
 
 class Pemasukan extends StatefulWidget {
   @override

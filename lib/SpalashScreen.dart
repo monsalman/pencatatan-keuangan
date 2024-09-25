@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
-import 'HomePage.dart';
-import 'main.dart';
+import 'Login_Register/LandingPage.dart';
+// import 'main.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({Key? key}) : super(key: key);
@@ -18,10 +18,10 @@ class _SplashScreenState extends State<SplashScreen> {
   }
 
   _navigateToNextScreen() async {
-    await Future.delayed(Duration(seconds: 3));
+    await Future.delayed(Duration(seconds: 5));
     Navigator.of(context).pushReplacement(
       MaterialPageRoute(
-        builder: (context) => HomePage(),
+        builder: (context) => LandingPage(),
       ),
     );
   }
@@ -30,13 +30,7 @@ class _SplashScreenState extends State<SplashScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topRight,
-            end: Alignment.bottomLeft,
-            colors: [Colors.white, WarnaUtama],
-          ),
-        ),
+        color: Color(0xFF252B48),
         child: Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -44,9 +38,10 @@ class _SplashScreenState extends State<SplashScreen> {
               Image.asset('assets/splashscreen.png', width: 220, height: 220),
               SizedBox(height: 5),
               Text(
-                'Cashier App',
+                'Pencatatan Keuangan',
                 style: TextStyle(
-                  fontSize: 32,
+                  fontSize: 25,
+                  fontFamily: 'Futura',
                   fontWeight: FontWeight.bold,
                   color: Colors.white,
                 ),

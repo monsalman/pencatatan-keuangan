@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:pencatatan_keuangan/Login_Register/LoginPage.dart';
 import 'package:pencatatan_keuangan/SpalashScreen.dart';
+import 'package:pencatatan_keuangan/Login_Register/DaftarPage.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 Future<void> main() async {
@@ -20,12 +22,17 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
+      initialRoute: '/',
+      routes: {
+        '/': (context) => SplashScreen(),
+        'daftarPage': (context) => DaftarPage(),
+        'loginPage': (context) => Loginpage(),
+      },
       theme: ThemeData(
         primaryColor: Colors.white,
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.white ),
         useMaterial3: true,
       ),
-      home: const SplashScreen(),
     );
   }
 }
