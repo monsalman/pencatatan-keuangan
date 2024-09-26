@@ -1,7 +1,35 @@
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import '../Page/HomePage.dart';
+import '../main.dart';
 
-class DaftarPage extends StatelessWidget {
-  const DaftarPage({Key? key}) : super(key: key);
+class LoginPage extends StatefulWidget {
+  const LoginPage({Key? key}) : super(key: key);
+
+  @override
+  _LoginPageState createState() => _LoginPageState();
+}
+
+class _LoginPageState extends State<LoginPage> {
+  final _kontrollerEmail = TextEditingController();
+  final _kontrollerKataSandi = TextEditingController();
+  bool _isPasswordVisible = false;
+
+  Future<void> _login() async {
+    try {
+      final respon = await Supabase.instance.client.auth.signInWithPassword(
+        email: _kontrollerEmail.text,
+        password: _kontrollerKataSandi.text,
+      );
+      if (respon.user != null) {
+        Navigator.push(context,MaterialPageRoute(builder: (context) => HomePage()),);
+      }
+    } catch (kesalahan) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Kesalahan: ${kesalahan.toString()}')),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -23,8 +51,6 @@ class DaftarPage extends StatelessWidget {
                         const SizedBox(height: 20),
                         _buildTitle(),
                         const SizedBox(height: 40),
-                        _buildInputField('Username'),
-                        const SizedBox(height: 20),
                         _buildInputField('Email'),
                         const SizedBox(height: 20),
                         _buildInputField('Password', isPassword: true),
@@ -56,7 +82,7 @@ class DaftarPage extends StatelessWidget {
   Widget _buildTitle() {
     return const Center(
       child: Text(
-        'Daftar',
+        'Masuk',
         style: TextStyle(
           color: Colors.white,
           fontSize: 25,
@@ -69,8 +95,10 @@ class DaftarPage extends StatelessWidget {
 
   Widget _buildInputField(String label, {bool isPassword = false}) {
     return TextField(
-      obscureText: isPassword,
+      controller: label == 'Email' ? _kontrollerEmail : _kontrollerKataSandi,
+      obscureText: isPassword && !_isPasswordVisible,
       style: const TextStyle(color: Colors.white),
+      cursorColor: WarnaSecondary,
       decoration: InputDecoration(
         labelText: label,
         labelStyle: TextStyle(
@@ -85,6 +113,19 @@ class DaftarPage extends StatelessWidget {
         focusedBorder: const UnderlineInputBorder(
           borderSide: BorderSide(color: Color(0xFFEBF400)),
         ),
+        suffixIcon: isPassword
+            ? IconButton(
+                icon: Icon(
+                  _isPasswordVisible ? Icons.visibility : Icons.visibility_off,
+                  color: Colors.white,
+                ),
+                onPressed: () {
+                  setState(() {
+                    _isPasswordVisible = !_isPasswordVisible;
+                  });
+                },
+              )
+            : null,
       ),
     );
   }
@@ -93,19 +134,17 @@ class DaftarPage extends StatelessWidget {
     return SizedBox(
       width: double.infinity,
       child: ElevatedButton(
-        onPressed: () {
-          // Handle registration
-        },
+        onPressed: _login,
         style: ElevatedButton.styleFrom(
-          backgroundColor: const Color(0xFFEBF400),
-          foregroundColor: const Color(0xFF332941),
+          backgroundColor: WarnaSecondary,
+          foregroundColor: WarnaUtama,
           padding: const EdgeInsets.symmetric(vertical: 15),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(50),
           ),
         ),
         child: const Text(
-          'Daftar',
+          'Masuk',
           style: TextStyle(
             fontSize: 18,
             fontFamily: 'Inter',
@@ -121,7 +160,7 @@ class DaftarPage extends StatelessWidget {
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         const Text(
-          'Sudah Punya Akun?',
+          'Belum Punya Akun?',
           style: TextStyle(
             color: Color(0xFFEBF400),
             fontSize: 16,
@@ -131,10 +170,10 @@ class DaftarPage extends StatelessWidget {
         ),
         TextButton(
           onPressed: () {
-            Navigator.pushNamed(context, 'loginPage');
+            Navigator.pushNamed(context, 'daftarPage');
           },
           child: const Text(
-            'Masuk',
+            'Daftar',
             style: TextStyle(
               color: Color(0xFF5786FF),
               fontSize: 16,
@@ -145,5 +184,12 @@ class DaftarPage extends StatelessWidget {
         ),
       ],
     );
+  }
+
+  @override
+  void dispose() {
+    _kontrollerEmail.dispose();
+    _kontrollerKataSandi.dispose();
+    super.dispose();
   }
 }

@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
-
-import 'Login_Register/LandingPage.dart';
-// import 'main.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'Login Register/LandingPage.dart';
+import 'Page/HomePage.dart';
+import 'main.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({Key? key}) : super(key: key);
@@ -19,18 +20,24 @@ class _SplashScreenState extends State<SplashScreen> {
 
   _navigateToNextScreen() async {
     await Future.delayed(Duration(seconds: 5));
-    Navigator.of(context).pushReplacement(
-      MaterialPageRoute(
-        builder: (context) => LandingPage(),
-      ),
-    );
+    
+    final user = Supabase.instance.client.auth.currentUser;
+    if (user != null) {
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(builder: (context) => HomePage()),
+      );
+    } else {
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(builder: (context) => LandingPage()),
+      );
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: Container(
-        color: Color(0xFF252B48),
+        color: WarnaUtama,
         child: Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,

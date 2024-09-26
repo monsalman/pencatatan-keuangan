@@ -54,7 +54,7 @@ class _PemasukanState extends State<Pemasukan> {
             children: [
               TextFormField(
                 controller: _kontrolerNilai,
-                cursorColor: WarnaUtama,
+                cursorColor: WarnaSecondary,
                 decoration: InputDecoration(
                   labelText: 'Nilai',
                   prefixText: 'Rp. ',
@@ -89,7 +89,7 @@ class _PemasukanState extends State<Pemasukan> {
               SizedBox(height: 16),
               TextFormField(
                 controller: _kontrolerKategori,
-                cursorColor: WarnaUtama,
+                cursorColor: WarnaSecondary,
                 decoration: InputDecoration(
                   labelText: 'Kategori',
                   border: OutlineInputBorder(
@@ -111,7 +111,7 @@ class _PemasukanState extends State<Pemasukan> {
               SizedBox(height: 16),
               TextFormField(
                 controller: _kontrolerCatatan,
-                cursorColor: WarnaUtama,
+                cursorColor: WarnaSecondary,
                 decoration: InputDecoration(
                   labelText: 'Catatan',
                   border: OutlineInputBorder(
@@ -191,13 +191,14 @@ class _PemasukanState extends State<Pemasukan> {
                               'catatan': _kontrolerCatatan.text,
                               'tanggal': _selectedDate.toIso8601String(),
                               'jenis': 'pemasukan',
-                              'user_id': user.id,  // Menambahkan user_id
+                              'user_id': user.id,
                             });
 
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(content: Text('Data berhasil disimpan oleh ${user.email}')),
                             );
-                            Navigator.of(context).pop();
+                            // Return to HomePage and refresh
+                            Navigator.of(context).pop(true);
                           } catch (e) {
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(content: Text('Gagal menyimpan data: $e')),

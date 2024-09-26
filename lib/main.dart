@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:pencatatan_keuangan/Login_Register/LoginPage.dart';
-import 'package:pencatatan_keuangan/SpalashScreen.dart';
-import 'package:pencatatan_keuangan/Login_Register/DaftarPage.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+
+import 'Login Register/LoginPage.dart';
+import 'Login Register/RegisterPage.dart';
+import 'SpalashScreen.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -25,8 +26,8 @@ class MyApp extends StatelessWidget {
       initialRoute: '/',
       routes: {
         '/': (context) => SplashScreen(),
-        'daftarPage': (context) => DaftarPage(),
-        'loginPage': (context) => Loginpage(),
+        'daftarPage': (context) => RegisterPage(),
+        'loginPage': (context) => LoginPage(),
       },
       theme: ThemeData(
         primaryColor: Colors.white,
@@ -37,8 +38,9 @@ class MyApp extends StatelessWidget {
   }
 }
 
-final Color WarnaUtama = Color.fromARGB(255, 158, 203, 238);
-
+final Color WarnaUtama = Color(0xFF252B48);
+final Color WarnaSecondary = Color(0xFFEBF400);
+// 0xFF332941
 // arrow_up_right
 // arrow_down_right
 

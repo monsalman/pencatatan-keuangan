@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 
-class Loginpage extends StatelessWidget {
-  const Loginpage({Key? key}) : super(key: key);
+import '../main.dart';
+
+class RegisterPage extends StatelessWidget {
+  const RegisterPage({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -23,6 +25,8 @@ class Loginpage extends StatelessWidget {
                         const SizedBox(height: 20),
                         _buildTitle(),
                         const SizedBox(height: 40),
+                        _buildInputField('Username'),
+                        const SizedBox(height: 20),
                         _buildInputField('Email'),
                         const SizedBox(height: 20),
                         _buildInputField('Password', isPassword: true),
@@ -54,7 +58,7 @@ class Loginpage extends StatelessWidget {
   Widget _buildTitle() {
     return const Center(
       child: Text(
-        'Masuk',
+        'Daftar',
         style: TextStyle(
           color: Colors.white,
           fontSize: 25,
@@ -69,6 +73,7 @@ class Loginpage extends StatelessWidget {
     return TextField(
       obscureText: isPassword,
       style: const TextStyle(color: Colors.white),
+      cursorColor: WarnaSecondary,
       decoration: InputDecoration(
         labelText: label,
         labelStyle: TextStyle(
@@ -119,7 +124,7 @@ class Loginpage extends StatelessWidget {
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         const Text(
-          'Belum Punya Akun?',
+          'Sudah Punya Akun?',
           style: TextStyle(
             color: Color(0xFFEBF400),
             fontSize: 16,
@@ -129,10 +134,10 @@ class Loginpage extends StatelessWidget {
         ),
         TextButton(
           onPressed: () {
-            Navigator.pushNamed(context, 'daftarPage');
+            Navigator.pushNamed(context, 'loginPage');
           },
           child: const Text(
-            'Daftar',
+            'Masuk',
             style: TextStyle(
               color: Color(0xFF5786FF),
               fontSize: 16,
