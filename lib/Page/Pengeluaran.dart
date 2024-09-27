@@ -5,12 +5,12 @@ import 'package:flutter/services.dart';
 import '../main.dart';
 import '../notification_service.dart';
 
-class Pemasukan extends StatefulWidget {
+class Pengeluaran extends StatefulWidget {
   @override
-  _PemasukanState createState() => _PemasukanState();
+  _PengeluaranState createState() => _PengeluaranState();
 }
 
-class _PemasukanState extends State<Pemasukan> {
+class _PengeluaranState extends State<Pengeluaran> {
   final _formKey = GlobalKey<FormState>();
   final _kontrolerNilai = TextEditingController();
   final _kontrolerCatatan = TextEditingController();
@@ -189,14 +189,14 @@ class _PemasukanState extends State<Pemasukan> {
                               'kategori': _kontrolerKategori.text,
                               'catatan': _kontrolerCatatan.text,
                               'tanggal': _selectedDate.toIso8601String(),
-                              'jenis': 'pemasukan',
+                              'jenis': 'pengeluaran',
                               'user_id': user.id,
                             });
 
                             // Tampilkan notifikasi transaksi
                             await NotificationService().showTransactionNotification(
                               title: 'Transaksi Berhasil',
-                              body: 'Pemasukan sebesar Rp. ${_kontrolerNilai.text} telah disimpan.',
+                              body: 'Pengeluaran sebesar Rp. ${_kontrolerNilai.text} telah disimpan.',
                             );
 
                             ScaffoldMessenger.of(context).showSnackBar(
