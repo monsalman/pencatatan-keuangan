@@ -5,6 +5,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:intl/intl.dart';
 
 import '../main.dart';
+import 'DetailTransaksi.dart';
 import 'Pemasukan.dart';
 import 'Pengeluaran.dart';
 
@@ -36,6 +37,9 @@ class _HomePageState extends State<HomePage>
   double _totalPengeluaran = 0;
   double _totalSaldo = 0;
 
+  String _username = '';
+  String _email = '';
+
   @override
   void initState() {
     super.initState();
@@ -64,6 +68,7 @@ class _HomePageState extends State<HomePage>
 
     _ambilTransaksi();
     _hitungTotal();
+    _getUserInfo();
 
     _scrollController.addListener(() {
       if (_scrollController.offset > 100 && !_isHeaderCollapsed) {
@@ -86,12 +91,12 @@ class _HomePageState extends State<HomePage>
   Future<void> _ambilTransaksi() async {
     setState(() => _isLoading = true);
     try {
-      final user = Supabase.instance.client.auth.currentUser;
+      final user = supabase.auth.currentUser;
       if (user == null) {
         throw Exception('Pengguna belum masuk');
       }
 
-      final response = await Supabase.instance.client
+      final response = await supabase
           .from('transaksi')
           .select()
           .eq('user_id', user.id)
@@ -103,6 +108,12 @@ class _HomePageState extends State<HomePage>
             .toList();
         _isLoading = false;
       });
+
+      // Tambahkan ini untuk debugging
+      _transactions.forEach((transaction) {
+        print('Transaction ID: ${transaction.id}, Image URL: ${transaction.imageUrl}');
+      });
+
     } catch (e) {
       print('Kesalahan saat mengambil transaksi: $e');
       setState(() => _isLoading = false);
@@ -143,6 +154,16 @@ class _HomePageState extends State<HomePage>
     }
   }
 
+  Future<void> _getUserInfo() async {
+    final user = supabase.auth.currentUser;
+    if (user != null) {
+      setState(() {
+        _email = user.email ?? '';
+        _username = user.userMetadata?['username'] ?? '';
+      });
+    }
+  }
+
   @override
   void dispose() {
     _animationController.dispose();
@@ -159,7 +180,7 @@ class _HomePageState extends State<HomePage>
           controller: _scrollController,
           slivers: [
             SliverAppBar(
-              expandedHeight: 250,
+              expandedHeight: 280,
               floating: false,
               pinned: true,
               backgroundColor: _isAppBarExpanded ? WarnaUtama : WarnaSecondary,
@@ -186,13 +207,21 @@ class _HomePageState extends State<HomePage>
       decoration: BoxDecoration(
         color: WarnaSecondary,
         borderRadius: BorderRadius.only(
-          // bottomLeft: Radius.circular(30),
           bottomRight: Radius.circular(35),
         ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          Text(
+            'Selamat datang, $_username',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: WarnaUtama,
+            ),
+          ),
+          SizedBox(height: 10),
           Text(
             'Ringkasan Keuangan',
             style: TextStyle(
@@ -347,35 +376,45 @@ class _HomePageState extends State<HomePage>
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
       elevation: 2,
       color: WarnaSecondary,
-      child: ListTile(
-        contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        leading: Container(
-          padding: EdgeInsets.all(10),
-          decoration: BoxDecoration(
-            color: transactionColor.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(12),
+      child: InkWell(  // Tambahkan ini
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => DetailTransaksi(transaction: transaction),
+            ),
+          );
+        },
+        child: ListTile(
+          contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          leading: Container(
+            padding: EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: transactionColor.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(
+              transactionIcon,
+              color: transactionColor,
+              size: 28,
+            ),
           ),
-          child: Icon(
-            transactionIcon,
-            color: transactionColor,
-            size: 28,
+          title: Text(
+            transaction.kategori,
+            style: TextStyle(
+                fontWeight: FontWeight.bold, fontSize: 16, color: WarnaUtama),
           ),
-        ),
-        title: Text(
-          transaction.kategori,
-          style: TextStyle(
-              fontWeight: FontWeight.bold, fontSize: 16, color: WarnaUtama),
-        ),
-        subtitle: Text(
-          transaction.catatan,
-          style: TextStyle(color: WarnaUtama.withOpacity(0.6)),
-        ),
-        trailing: Text(
-          '${isIncome ? '+' : '-'} Rp. ${NumberFormat('#,##0').format(transaction.nilai)}',
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-            color: transactionColor,
-            fontSize: 16,
+          subtitle: Text(
+            transaction.catatan,
+            style: TextStyle(color: WarnaUtama.withOpacity(0.6)),
+          ),
+          trailing: Text(
+            '${isIncome ? '+' : '-'} Rp. ${NumberFormat('#,##0').format(transaction.nilai)}',
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              color: transactionColor,
+              fontSize: 16,
+            ),
           ),
         ),
       ),
@@ -519,6 +558,7 @@ class Transaction {
   final DateTime tanggal;
   final String jenis;
   final String userId;
+  final String? imageUrl;
 
   Transaction({
     required this.id,
@@ -528,6 +568,7 @@ class Transaction {
     required this.tanggal,
     required this.jenis,
     required this.userId,
+    this.imageUrl,
   });
 
   factory Transaction.fromJson(Map<String, dynamic> json) {
@@ -539,6 +580,7 @@ class Transaction {
       tanggal: DateTime.parse(json['tanggal']),
       jenis: json['jenis'],
       userId: json['user_id'],
+      imageUrl: json['image_url'] as String?,
     );
   }
 }

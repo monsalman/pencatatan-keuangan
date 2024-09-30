@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:flutter/services.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:path/path.dart' as path;
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../main.dart';
 import '../notification_service.dart';
@@ -16,6 +19,8 @@ class _PemasukanState extends State<Pemasukan> {
   final _kontrolerCatatan = TextEditingController();
   final _kontrolerKategori = TextEditingController();
   DateTime _selectedDate = DateTime.now();
+  XFile? _image;
+  final ImagePicker _picker = ImagePicker();
 
   Future<void> _selectDate(BuildContext context) async {
     final DateTime? picked = await showDatePicker(
@@ -37,6 +42,15 @@ class _PemasukanState extends State<Pemasukan> {
       setState(() {
         _selectedDate = picked;
       });
+  }
+
+  Future<void> _pickImage() async {
+    final XFile? pickedFile = await _picker.pickImage(source: ImageSource.gallery);
+    if (pickedFile != null) {
+      setState(() {
+        _image = pickedFile;
+      });
+    }
   }
 
   @override
@@ -155,6 +169,30 @@ class _PemasukanState extends State<Pemasukan> {
                   ),
                 ),
               ),
+              SizedBox(height: 16),
+              InkWell(
+                onTap: _pickImage,
+                child: InputDecorator(
+                  decoration: InputDecoration(
+                    labelText: 'Upload Gambar',
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: BorderSide(color: WarnaUtama),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: BorderSide(color: WarnaUtama, width: 2),
+                    ),
+                    filled: true,
+                    fillColor: Colors.white,
+                    prefixIcon: Icon(Icons.image, color: WarnaUtama),
+                    labelStyle: TextStyle(color: WarnaUtama),
+                  ),
+                  child: _image == null
+                      ? Text('Pilih gambar', style: TextStyle(color: Colors.black87))
+                      : Text(path.basename(_image!.path), style: TextStyle(color: Colors.black87)),
+                ),
+              ),
               Spacer(),
               Row(
                 children: [
@@ -184,6 +222,20 @@ class _PemasukanState extends State<Pemasukan> {
                             if (user == null) {
                               throw Exception('Pengguna belum login');
                             }
+
+                            String? imageUrl;
+                            if (_image != null) {
+                              final fileName = '${DateTime.now().millisecondsSinceEpoch}_${path.basename(_image!.path)}';
+                              final bytes = await _image!.readAsBytes();
+                              await supabase.storage
+                                  .from('transaction_images')
+                                  .uploadBinary(fileName, bytes);
+
+                              // Simpan path relatif, bukan URL lengkap
+                              imageUrl = fileName;
+                              print('Saved Image URL: $imageUrl'); // Tambahkan ini untuk debugging
+                            }
+
                             final response = await supabase.from('transaksi').insert({
                               'nilai': double.parse(_kontrolerNilai.text),
                               'kategori': _kontrolerKategori.text,
@@ -191,6 +243,7 @@ class _PemasukanState extends State<Pemasukan> {
                               'tanggal': _selectedDate.toIso8601String(),
                               'jenis': 'pemasukan',
                               'user_id': user.id,
+                              'image_url': imageUrl,
                             });
 
                             // Tampilkan notifikasi transaksi
