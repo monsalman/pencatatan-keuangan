@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:pencatatan_keuangan/Login%20Register/LandingPage.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'notification_service.dart';
@@ -39,6 +40,7 @@ class MyApp extends StatelessWidget {
         '/': (context) => SplashScreen(),
         'daftarPage': (context) => RegisterPage(),
         'loginPage': (context) => LoginPage(),
+        'landingPage': (context) => LandingPage()
       },
       theme: ThemeData(
         primaryColor: Colors.white,

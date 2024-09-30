@@ -33,38 +33,38 @@ class _LoginPageState extends State<LoginPage> {
 
   @override
   Widget build(BuildContext context) {
+    final mediaQuery = MediaQuery.of(context);
+    final screenHeight = mediaQuery.size.height;
+    final screenWidth = mediaQuery.size.width;
+    final isSmallScreen = screenWidth < 600;
+
     return Scaffold(
       backgroundColor: const Color(0xFF252B48),
       body: SafeArea(
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            return SingleChildScrollView(
-              child: ConstrainedBox(
-                constraints: BoxConstraints(minHeight: constraints.maxHeight),
-                child: IntrinsicHeight(
-                  child: Padding(
-                    padding: const EdgeInsets.all(20.0),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _buildBackButton(context),
-                        const SizedBox(height: 20),
-                        _buildTitle(),
-                        const SizedBox(height: 40),
-                        _buildInputField('Email'),
-                        const SizedBox(height: 20),
-                        _buildInputField('Password', isPassword: true),
-                        const SizedBox(height: 40),
-                        _buildRegisterButton(),
-                        const Spacer(),
-                        _buildLoginPrompt(context),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            );
-          },
+        child: SingleChildScrollView(
+          child: Container(
+            height: screenHeight,
+            padding: EdgeInsets.symmetric(
+              horizontal: screenWidth * 0.05,
+              vertical: screenHeight * 0.02,
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildBackButton(context),
+                SizedBox(height: screenHeight * 0.02),
+                _buildTitle(),
+                SizedBox(height: screenHeight * 0.05),
+                _buildInputField('Email'),
+                SizedBox(height: screenHeight * 0.02),
+                _buildInputField('Password', isPassword: true),
+                SizedBox(height: screenHeight * 0.05),
+                _buildRegisterButton(),
+                const Spacer(),
+                _buildLoginPrompt(context),
+              ],
+            ),
+          ),
         ),
       ),
     );
@@ -74,7 +74,7 @@ class _LoginPageState extends State<LoginPage> {
     return IconButton(
       icon: const Icon(Icons.arrow_back, color: Colors.white),
       onPressed: () {
-        Navigator.of(context).pop();
+        Navigator.pushNamed(context, 'landingPage');
       },
     );
   }
@@ -138,12 +138,12 @@ class _LoginPageState extends State<LoginPage> {
         style: ElevatedButton.styleFrom(
           backgroundColor: WarnaSecondary,
           foregroundColor: WarnaUtama,
-          padding: const EdgeInsets.symmetric(vertical: 15),
+          padding: EdgeInsets.symmetric(vertical: MediaQuery.of(context).size.height * 0.02),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(50),
           ),
         ),
-        child: const Text(
+        child: Text(
           'Masuk',
           style: TextStyle(
             fontSize: 18,

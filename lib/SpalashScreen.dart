@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:pencatatan_keuangan/Page/HomePage2.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'Login Register/LandingPage.dart';
+// import 'Login Register/LandingPage.dart';
 import 'Page/HomePage.dart';
 import 'main.dart';
 
@@ -28,7 +29,7 @@ class _SplashScreenState extends State<SplashScreen> {
       );
     } else {
       Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (context) => LandingPage()),
+        MaterialPageRoute(builder: (context) => HomePage2()),
       );
     }
   }

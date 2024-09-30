@@ -27,82 +27,90 @@ class _LandingPageState extends State<LandingPage> {
 
   @override
   Widget build(BuildContext context) {
+    final mediaQuery = MediaQuery.of(context);
+    final screenWidth = mediaQuery.size.width;
+    final screenHeight = mediaQuery.size.height;
+
     return Scaffold(
-      body: LayoutBuilder(
-        builder: (context, constraints) {
-          return SingleChildScrollView(
-            child: ConstrainedBox(
-              constraints: BoxConstraints(minHeight: constraints.maxHeight),
-              child: Container(
-                color: WarnaUtama,
-                padding: EdgeInsets.symmetric(horizontal: 20, vertical: 40),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    _buildImageAndText(constraints),
-                    _buildDotIndicator(),
-                    _buildRegisterButton(constraints),
-                    _buildLoginText(),
-                  ],
-                ),
+      body: Container(
+        color: WarnaUtama,
+        width: screenWidth,
+        height: screenHeight,
+        child: SafeArea(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Expanded(
+                child: _buildImageAndText(screenWidth, screenHeight),
               ),
-            ),
-          );
-        },
+              _buildDotIndicator(),
+              SizedBox(height: screenHeight * 0.05),
+              _buildRegisterButton(screenWidth, screenHeight),
+              SizedBox(height: screenHeight * 0.02),
+              _buildLoginText(screenWidth),
+              SizedBox(height: screenHeight * 0.03),
+            ],
+          ),
+        ),
       ),
     );
   }
 
-  Widget _buildImageAndText(BoxConstraints constraints) {
-    double maxWidth = constraints.maxWidth;
-    double maxHeight = constraints.maxHeight;
-    double imageSize = maxWidth * 0.6; // Increased size
-    double fontSize = maxWidth * 0.04; // Adjusted font size
+  Widget _buildImageAndText(double screenWidth, double screenHeight) {
+    double imageSize = screenWidth * 0.5;
+    double fontSize = screenWidth * 0.04;
+    int maxTextLength = 70; // Batasan maksimum karakter untuk teks
 
-    return Container(
-      height: maxHeight * 0.6,
-      width: maxWidth,
-      child: CarouselSlider(
-        options: CarouselOptions(
-          autoPlay: true,
-          aspectRatio: 1,
-          enlargeCenterPage: true,
-          onPageChanged: (index, reason) {
-            setState(() {
-              _currentIndex = index;
-            });
-          },
-          viewportFraction: 1.0,
-        ),
-        items: imgList.asMap().entries.map((entry) {
-          int index = entry.key;
-          String item = entry.value;
-          return Container(
-            width: maxWidth,
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Image.asset(
-                  item,
-                  fit: BoxFit.contain,
-                  width: imageSize,
-                  height: imageSize,
-                ),
-                SizedBox(height: maxHeight * 0.02),
-                Text(
-                  textList[index],
+    return CarouselSlider(
+      options: CarouselOptions(
+        autoPlay: true,
+        aspectRatio: 1,
+        enlargeCenterPage: true,
+        onPageChanged: (index, reason) {
+          setState(() {
+            _currentIndex = index;
+          });
+        },
+        viewportFraction: 1.0,
+        height: screenHeight * 0.7,
+      ),
+      items: imgList.asMap().entries.map((entry) {
+        int index = entry.key;
+        String item = entry.value;
+        String displayText = textList[index].length > maxTextLength
+            ? textList[index].substring(0, maxTextLength) + '...'
+            : textList[index];
+        
+        return Container(
+          width: screenWidth,
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Image.asset(
+                item,
+                fit: BoxFit.contain,
+                width: imageSize,
+                height: imageSize,
+              ),
+              SizedBox(height: screenHeight * 0.05),
+              Container(
+                width: screenWidth * 0.8,
+                child: Text(
+                  displayText,
                   style: TextStyle(
                     color: Colors.white,
                     fontSize: fontSize,
                     fontWeight: FontWeight.w400,
                   ),
                   textAlign: TextAlign.center,
+                  maxLines: 3,
+                  overflow: TextOverflow.ellipsis,
                 ),
-              ],
-            ),
-          );
-        }).toList(),
-      ),
+              ),
+            ],
+          ),
+        );
+      }).toList(),
     );
   }
 
@@ -127,7 +135,7 @@ class _LandingPageState extends State<LandingPage> {
     );
   }
 
-  Widget _buildRegisterButton(BoxConstraints constraints) {
+  Widget _buildRegisterButton(double screenWidth, double screenHeight) {
     return ElevatedButton(
       onPressed: () {
         Navigator.pushNamed(context, 'daftarPage');
@@ -135,7 +143,7 @@ class _LandingPageState extends State<LandingPage> {
       style: ElevatedButton.styleFrom(
         backgroundColor: WarnaSecondary,
         foregroundColor: WarnaUtama,
-        minimumSize: Size(constraints.maxWidth * 0.8, constraints.maxHeight * 0.06),
+        minimumSize: Size(screenWidth * 0.8, screenHeight * 0.06),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(25),
         ),
@@ -143,14 +151,14 @@ class _LandingPageState extends State<LandingPage> {
       child: Text(
         'Daftar',
         style: TextStyle(
-          fontSize: constraints.maxWidth * 0.05,
+          fontSize: 18,
           fontWeight: FontWeight.w600,
         ),
       ),
     );
   }
 
-  Widget _buildLoginText() {
+  Widget _buildLoginText(double screenWidth) {
     return MouseRegion(
       cursor: SystemMouseCursors.click,
       child: GestureDetector(
@@ -160,8 +168,8 @@ class _LandingPageState extends State<LandingPage> {
         child: Text(
           'Masuk',
           style: TextStyle(
-            color: WarnaSecondary,  // Assuming you've set up the constants as suggested earlier
-            fontSize: MediaQuery.of(context).size.width * 0.05,
+            color: WarnaSecondary,
+            fontSize: 18,
             fontWeight: FontWeight.w600,
           ),
         ),
