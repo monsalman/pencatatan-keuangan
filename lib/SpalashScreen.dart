@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'Login Register/LandingPage.dart';
 import 'Page/HomePage.dart';
+import 'Page/HomePage2.dart';
 import 'main.dart';
 
 class SplashScreen extends StatefulWidget {
@@ -24,7 +25,7 @@ class _SplashScreenState extends State<SplashScreen> {
     final user = Supabase.instance.client.auth.currentUser;
     if (user != null) {
       Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (context) => HomePage()),
+        MaterialPageRoute(builder: (context) => HomePage2()),
       );
     } else {
       Navigator.of(context).pushReplacement(

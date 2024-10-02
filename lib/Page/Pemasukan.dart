@@ -3,7 +3,6 @@ import 'package:intl/intl.dart';
 import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:path/path.dart' as path;
-import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../main.dart';
 import '../notification_service.dart';

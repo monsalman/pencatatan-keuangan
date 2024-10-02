@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../Page/HomePage.dart';
+import '../Page/HomePage2.dart';
 import '../main.dart';
 
 class LoginPage extends StatefulWidget {
@@ -22,7 +23,7 @@ class _LoginPageState extends State<LoginPage> {
         password: _kontrollerKataSandi.text,
       );
       if (respon.user != null) {
-        Navigator.push(context,MaterialPageRoute(builder: (context) => HomePage()),);
+        Navigator.push(context,MaterialPageRoute(builder: (context) => HomePage2()),);
       }
     } catch (kesalahan) {
       ScaffoldMessenger.of(context).showSnackBar(

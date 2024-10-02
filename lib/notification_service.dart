@@ -1,6 +1,7 @@
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/data/latest.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
+import 'dart:async';
 
 class NotificationService {
   static final NotificationService _notificationService = NotificationService._internal();
@@ -23,11 +24,18 @@ class NotificationService {
       requestAlertPermission: false,
     );
 
+    final LinuxInitializationSettings initializationSettingsLinux =
+        LinuxInitializationSettings(
+      defaultActionName: 'Open notification',
+      defaultIcon: AssetsLinuxIcon('assets/launcher.png'),
+    );
+
     final InitializationSettings initializationSettings =
         InitializationSettings(
             android: initializationSettingsAndroid,
             iOS: initializationSettingsIOS,
-            macOS: null);
+            macOS: null,
+            linux: initializationSettingsLinux);
 
     await flutterLocalNotificationsPlugin.initialize(initializationSettings);
 
@@ -37,26 +45,30 @@ class NotificationService {
   }
 
   Future<void> showDailyReminder() async {
-    await flutterLocalNotificationsPlugin.zonedSchedule(
-      1, // Unique ID for daily reminder
-      'Pengingat Keuangan',
-      'Apakah kamu sudah mencatat keuanganmu hari ini?',
-      _nextInstanceOf2045(),
-      NotificationDetails(
-        android: AndroidNotificationDetails(
-          'daily_reminder',
-          'Daily Reminder',
-          importance: Importance.max,
-          priority: Priority.high,
+    final now = DateTime.now();
+    final scheduledTime = DateTime(now.year, now.month, now.day, 20, 45);
+    final duration = scheduledTime.difference(now);
+
+    Timer(duration, () async {
+      await flutterLocalNotificationsPlugin.show(
+        1,
+        'Pengingat Keuangan',
+        'Apakah kamu sudah mencatat keuanganmu hari ini?',
+        NotificationDetails(
+          android: AndroidNotificationDetails(
+            'daily_reminder',
+            'Daily Reminder',
+            importance: Importance.max,
+            priority: Priority.high,
+          ),
+          iOS: DarwinNotificationDetails(),
+          linux: LinuxNotificationDetails(
+            icon: AssetsLinuxIcon('assets/launcher.png'),
+          ),
         ),
-        iOS: DarwinNotificationDetails(),
-      ),
-      androidAllowWhileIdle: true,
-      uiLocalNotificationDateInterpretation:
-          UILocalNotificationDateInterpretation.absoluteTime,
-      matchDateTimeComponents: DateTimeComponents.time,
-      payload: 'homepage',
-    );
+        payload: 'homepage',
+      );
+    });
   }
 
   Future<void> showTransactionNotification({
@@ -75,6 +87,9 @@ class NotificationService {
           priority: Priority.high,
         ),
         iOS: DarwinNotificationDetails(),
+        linux: LinuxNotificationDetails(
+          icon: AssetsLinuxIcon('assets/launcher.png'),
+        ),
       ),
     );
   }

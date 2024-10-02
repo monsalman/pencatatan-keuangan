@@ -1,5 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
+import 'package:pencatatan_keuangan/main.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:intl/intl.dart';
+import 'package:intl/date_symbol_data_local.dart';
+import 'dart:math' as math;
 
 class HomePage2 extends StatelessWidget {
   @override
@@ -32,7 +37,57 @@ class HomePage2 extends StatelessWidget {
   }
 }
 
-class BalanceSection extends StatelessWidget {
+class BalanceSection extends StatefulWidget {
+  @override
+  _BalanceSectionState createState() => _BalanceSectionState();
+}
+
+class _BalanceSectionState extends State<BalanceSection> {
+  final supabase = Supabase.instance.client;
+  double totalBalance = 0;
+  bool isBalanceVisible = true;
+
+  @override
+  void initState() {
+    super.initState();
+    fetchTotalBalance();
+  }
+
+  Future<void> fetchTotalBalance() async {
+    final user = supabase.auth.currentUser;
+    if (user == null) return;
+
+    try {
+      final response = await supabase
+          .from('transaksi')
+          .select('jenis, nilai')
+          .eq('user_id', user.id);
+
+      final transactions = List<Map<String, dynamic>>.from(response);
+
+      double balance = 0;
+      for (var transaction in transactions) {
+        if (transaction['jenis'] == 'pemasukan') {
+          balance += transaction['nilai'] as double;
+        } else if (transaction['jenis'] == 'pengeluaran') {
+          balance -= transaction['nilai'] as double;
+        }
+      }
+
+      setState(() {
+        totalBalance = balance;
+      });
+    } catch (error) {
+      print('Error fetching total balance: $error');
+    }
+  }
+
+  void toggleBalanceVisibility() {
+    setState(() {
+      isBalanceVisible = !isBalanceVisible;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Row(
@@ -52,14 +107,21 @@ class BalanceSection extends StatelessWidget {
             Row(
               children: [
                 Text(
-                  'Rp. 1,000,000',
+                  isBalanceVisible ? 'Rp. ${NumberFormat.currency(locale: 'id', symbol: '', decimalDigits: 0).format(totalBalance)}' : 'Rp. ******',
                   style: TextStyle(
                       color: Colors.white,
                       fontSize: 20,
                       fontWeight: FontWeight.w600),
                 ),
                 SizedBox(width: 8),
-                Icon(Icons.remove_red_eye, color: Colors.white, size: 16),
+                GestureDetector(
+                  onTap: toggleBalanceVisibility,
+                  child: Icon(
+                    isBalanceVisible ? Icons.remove_red_eye : Icons.visibility_off,
+                    color: Colors.white,
+                    size: 16,
+                  ),
+                ),
               ],
             ),
           ],
@@ -121,7 +183,77 @@ class WalletItem extends StatelessWidget {
   }
 }
 
-class MonthlyReportSection extends StatelessWidget {
+class MonthlyReportSection extends StatefulWidget {
+  @override
+  _MonthlyReportSectionState createState() => _MonthlyReportSectionState();
+}
+
+class _MonthlyReportSectionState extends State<MonthlyReportSection> {
+  final supabase = Supabase.instance.client;
+  double totalPengeluaran = 0;
+  double totalPemasukan = 0;
+  List<FlSpot> chartData = [];
+
+  @override
+  void initState() {
+    super.initState();
+    initializeDateFormatting('id_ID', null);
+    fetchMonthlyData();
+  }
+
+  Future<void> fetchMonthlyData() async {
+    final user = supabase.auth.currentUser;
+    if (user == null) return;
+
+    final now = DateTime.now();
+    final startOfMonth = DateTime(now.year, now.month, 1);
+    final endOfMonth = DateTime(now.year, now.month + 1, 0);
+
+    try {
+      final response = await supabase
+          .from('transaksi')
+          .select()
+          .eq('user_id', user.id)
+          .gte('tanggal', startOfMonth.toIso8601String())
+          .lte('tanggal', endOfMonth.toIso8601String());
+
+      final transactions = List<Map<String, dynamic>>.from(response);
+
+      double pengeluaran = 0;
+      double pemasukan = 0;
+      Map<int, double> dailyBalance = {};
+
+      for (var transaction in transactions) {
+        final amount = transaction['nilai'] as double;
+        final date = DateTime.parse(transaction['tanggal']);
+        final day = date.day;
+
+        if (transaction['jenis'] == 'pengeluaran') {
+          pengeluaran += amount;
+          dailyBalance[day] = (dailyBalance[day] ?? 0) - amount;
+        } else if (transaction['jenis'] == 'pemasukan') {
+          pemasukan += amount;
+          dailyBalance[day] = (dailyBalance[day] ?? 0) + amount;
+        }
+      }
+
+      List<FlSpot> spots = [];
+      double cumulativeBalance = 0;
+      for (int i = 1; i <= endOfMonth.day; i++) {
+        cumulativeBalance += dailyBalance[i] ?? 0;
+        spots.add(FlSpot(i.toDouble(), cumulativeBalance));
+      }
+
+      setState(() {
+        totalPengeluaran = pengeluaran;
+        totalPemasukan = pemasukan;
+        chartData = spots;
+      });
+    } catch (error) {
+      print('Error fetching monthly data: $error');
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Column(
@@ -131,7 +263,7 @@ class MonthlyReportSection extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text(
-              'Report this month',
+              'Laporan Bulanan',
               style: TextStyle(
                 color: Colors.white,
                 fontSize: 14,
@@ -139,7 +271,7 @@ class MonthlyReportSection extends StatelessWidget {
               ),
             ),
             Text(
-              'Melihat laporan-laporan',
+              'Lihat Semua',
               style: TextStyle(
                 color: Colors.green,
                 fontSize: 12,
@@ -169,7 +301,7 @@ class MonthlyReportSection extends StatelessWidget {
                         style: TextStyle(color: Colors.grey, fontSize: 14),
                       ),
                       Text(
-                        '9,100,000',
+                        NumberFormat.currency(locale: 'id', symbol: 'Rp ', decimalDigits: 0).format(totalPengeluaran),
                         style: TextStyle(
                             color: Colors.red,
                             fontSize: 16,
@@ -181,11 +313,11 @@ class MonthlyReportSection extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
                       Text(
-                        'Total income',
+                        'Total pemasukan',
                         style: TextStyle(color: Colors.grey, fontSize: 14),
                       ),
                       Text(
-                        '20,150,000',
+                        NumberFormat.currency(locale: 'id', symbol: 'Rp ', decimalDigits: 0).format(totalPemasukan),
                         style: TextStyle(
                             color: Colors.blue,
                             fontSize: 16,
@@ -198,36 +330,77 @@ class MonthlyReportSection extends StatelessWidget {
               Divider(color: Colors.grey.withOpacity(0.4)),
               SizedBox(height: 16),
               Container(
-                height: 200,
+                height: 220, // Tinggi ditambah untuk memberi ruang pada label tanggal
                 child: LineChart(
                   LineChartData(
                     gridData: FlGridData(show: false),
-                    titlesData: FlTitlesData(show: false),
+                    titlesData: FlTitlesData(
+                      bottomTitles: AxisTitles(
+                        sideTitles: SideTitles(
+                          showTitles: true,
+                          reservedSize: 22,
+                          interval: 5,
+                          getTitlesWidget: (value, meta) {
+                            if (value % 5 == 0) {
+                              final date = DateTime(DateTime.now().year, DateTime.now().month, value.toInt());
+                            }
+                            return Text('');
+                          },
+                        ),
+                      ),
+                      leftTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                      topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                      rightTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                    ),
                     borderData: FlBorderData(show: false),
-                    minX: 0,
-                    maxX: 6,
-                    minY: 0,
-                    maxY: 6,
+                    minX: 1,
+                    maxX: 31,
+                    minY: chartData.isEmpty ? 0 : chartData.map((spot) => spot.y).reduce(math.min),
+                    maxY: chartData.isEmpty ? 30000 : chartData.map((spot) => spot.y).reduce(math.max),
                     lineBarsData: [
                       LineChartBarData(
-                        spots: [
-                          FlSpot(0, 3),
-                          FlSpot(1, 1),
-                          FlSpot(2, 4),
-                          FlSpot(3, 2),
-                          FlSpot(4, 5),
-                          FlSpot(5, 3),
-                          FlSpot(6, 4),
-                        ],
+                        spots: chartData,
                         isCurved: true,
                         color: Colors.green,
                         barWidth: 3,
                         isStrokeCapRound: true,
                         dotData: FlDotData(show: false),
                         belowBarData: BarAreaData(
-                            show: true, color: Colors.green.withOpacity(0.2)),
+                          show: true,
+                          color: Colors.green.withOpacity(0.2),
+                        ),
                       ),
                     ],
+                    lineTouchData: LineTouchData(
+                      enabled: true,
+                      touchTooltipData: LineTouchTooltipData(
+                        tooltipRoundedRadius: 8,
+                        getTooltipItems: (List<LineBarSpot> touchedBarSpots) {
+                          return touchedBarSpots.map((barSpot) {
+                            final flSpot = barSpot;
+                            final date = DateTime(DateTime.now().year, DateTime.now().month, flSpot.x.toInt());
+                            return LineTooltipItem(
+                              '${NumberFormat.currency(locale: 'id', symbol: 'Rp ', decimalDigits: 0).format(flSpot.y)}',
+                              TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                              ),
+                              children: [
+                                TextSpan(
+                                  text: '\n${DateFormat("dd - MMM", 'id_ID').format(date)}',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.normal,
+                                    fontSize: 12,
+                                  ),
+                                ),
+                              ],
+                            );
+                          }).toList();
+                        },
+                      ),
+                      handleBuiltInTouches: true,
+                    ),
                   ),
                 ),
               ),
@@ -257,7 +430,7 @@ class Pengeluaran extends StatelessWidget {
               ),
             ),
             Text(
-              'Lihas Semua',
+              'Lihat Semua',
               style: TextStyle(
                 color: Colors.green,
                 fontSize: 12,
@@ -278,12 +451,18 @@ class Pengeluaran extends StatelessWidget {
               ToggleButtons(),
               SizedBox(height: 16),
               ExpenseItem(
-                  title: 'Belanja', amount: 'Rp. 4,000,000', percentage: '50%'),
+                title: 'Belanja',
+                amount: '5 September 2024',
+                value: 'Rp. 4,000,000',
+                isIncome: false,
+              ),
               SizedBox(height: 12),
               ExpenseItem(
-                  title: 'Investasi',
-                  amount: 'Rp. 4,000,000',
-                  percentage: '50%'),
+                title: 'Investasi',
+                amount: '20 September 2024',
+                value: 'Rp. 4,000,000',
+                isIncome: false,
+              ),
             ],
           ),
         ),
@@ -328,7 +507,40 @@ class ToggleButtons extends StatelessWidget {
   }
 }
 
-class Transaksi extends StatelessWidget {
+class Transaksi extends StatefulWidget {
+  @override
+  _TransaksiState createState() => _TransaksiState();
+}
+
+class _TransaksiState extends State<Transaksi> {
+  final supabase = Supabase.instance.client;
+  List<Map<String, dynamic>> transactions = [];
+
+  @override
+  void initState() {
+    super.initState();
+    fetchTransactions();
+  }
+
+  Future<void> fetchTransactions() async {
+    final user = supabase.auth.currentUser;
+    if (user == null) return;
+
+    try {
+      final response = await supabase
+          .from('transaksi')
+          .select()
+          .eq('user_id', user.id)
+          .order('tanggal', ascending: false); // Urutkan berdasarkan tanggal terbaru
+
+      setState(() {
+        transactions = List<Map<String, dynamic>>.from(response);
+      });
+    } catch (error) {
+      print('Error fetching transactions: $error');
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Column(
@@ -346,9 +558,9 @@ class Transaksi extends StatelessWidget {
               ),
             ),
             Text(
-              'Lihas Semua',
+              'Lihat Semua',
               style: TextStyle(
-                color: Colors.green,
+                color: WarnaSecondary,
                 fontSize: 12,
                 fontWeight: FontWeight.w500,
               ),
@@ -363,17 +575,28 @@ class Transaksi extends StatelessWidget {
             borderRadius: BorderRadius.circular(15),
           ),
           child: Column(
-            children: [
-              ExpenseItem(
-                  title: 'Belanja',
-                  amount: '5 September 2024',
-                  percentage: 'Rp. 4,000,000'),
-              SizedBox(height: 12),
-              ExpenseItem(
-                  title: 'Investasi',
-                  amount: '20 September 2024',
-                  percentage: 'Rp. 4,000,000'),
-            ],
+            children: transactions.map((transaction) {
+              // Ubah format tanggal di sini
+              String formattedDate = 'No date';
+              if (transaction['tanggal'] != null) {
+                DateTime date = DateTime.parse(transaction['tanggal']);
+                formattedDate = DateFormat('dd-MMM-yyyy', 'id_ID').format(date);
+              }
+              
+              return Column(
+                children: [
+                  ExpenseItem(
+                    title: transaction['kategori'] ?? 'Uncategorized',
+                    amount: formattedDate,
+                    value: transaction['nilai'] != null
+                        ? 'Rp. ${NumberFormat.currency(locale: 'id', symbol: '', decimalDigits: 0).format(transaction['nilai'])}'
+                        : 'N/A',
+                    isIncome: transaction['jenis'] == 'pemasukan',
+                  ),
+                  SizedBox(height: 12),
+                ],
+              );
+            }).toList(),
           ),
         ),
       ],
@@ -384,14 +607,16 @@ class Transaksi extends StatelessWidget {
 class ExpenseItem extends StatelessWidget {
   final String title;
   final String amount;
-  final String percentage;
+  final String value;
+  final bool isIncome;
 
-  const ExpenseItem(
-      {Key? key,
-      required this.title,
-      required this.amount,
-      required this.percentage})
-      : super(key: key);
+  const ExpenseItem({
+    Key? key,
+    required this.title,
+    required this.amount,
+    required this.value,
+    required this.isIncome,
+  }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -408,8 +633,13 @@ class ExpenseItem extends StatelessWidget {
                     color: Colors.white.withOpacity(0.5), fontSize: 12)),
           ],
         ),
-        Text(percentage,
-            style: TextStyle(color: Color(0xFFFF2F2F), fontSize: 12)),
+        Text(
+          value,
+          style: TextStyle(
+            color: isIncome ? Colors.green : Color(0xFFFF2F2F),
+            fontSize: 12,
+          ),
+        ),
       ],
     );
   }

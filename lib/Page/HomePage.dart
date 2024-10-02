@@ -8,6 +8,7 @@ import '../main.dart';
 import 'DetailTransaksi.dart';
 import 'Pemasukan.dart';
 import 'Pengeluaran.dart';
+import '../Login Register/LoginPage.dart';
 
 // Add this extension
 extension StringExtension on String {
@@ -164,6 +165,15 @@ class _HomePageState extends State<HomePage>
     }
   }
 
+  Future<void> _logout(BuildContext context) async {
+    await Supabase.instance.client.auth.signOut();
+    Navigator.pushAndRemoveUntil(
+      context,
+      MaterialPageRoute(builder: (context) => LoginPage()),
+      (Route<dynamic> route) => false,
+    );
+  }
+
   @override
   void dispose() {
     _animationController.dispose();
@@ -222,12 +232,15 @@ class _HomePageState extends State<HomePage>
             ),
           ),
           SizedBox(height: 10),
-          Text(
-            'Ringkasan Keuangan',
-            style: TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-              color: WarnaUtama,
+          GestureDetector(
+            onTap: () => _logout(context),
+            child: Text(
+              'Ringkasan Keuangan',
+              style: TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+                color: WarnaUtama,
+              ),
             ),
           ),
           SizedBox(height: 20),

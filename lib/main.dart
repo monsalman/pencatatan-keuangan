@@ -14,12 +14,10 @@ final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Inisialisasi notifikasi
   final notificationService = NotificationService();
   await notificationService.init();
   await notificationService.showDailyReminder();
 
-  // Inisialisasi Supabase
   await Supabase.initialize(
     url: 'https://yxanyfzuxjrwzvdnzxud.supabase.co',
     anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl4YW55Znp1eGpyd3p2ZG56eHVkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MjY4NTYxNTQsImV4cCI6MjA0MjQzMjE1NH0.vlAGUp1dTk8quU77vAThNnHKtIzBGLAiR0rC1eLlSsM',
