@@ -45,11 +45,15 @@ class NotificationService {
   }
 
   Future<void> showDailyReminder() async {
-    final now = DateTime.now();
-    final scheduledTime = DateTime(now.year, now.month, now.day, 20, 45);
-    final duration = scheduledTime.difference(now);
+    Timer.periodic(Duration(hours: 24), (timer) async {
+      final now = DateTime.now();
+      DateTime scheduledTime = DateTime(now.year, now.month, now.day, 20, 45);
+      if (now.isAfter(scheduledTime)) {
+        scheduledTime = scheduledTime.add(Duration(days: 1));
+      }
+      final duration = scheduledTime.difference(now);
 
-    Timer(duration, () async {
+      await Future.delayed(duration);
       await flutterLocalNotificationsPlugin.show(
         1,
         'Pengingat Keuangan',

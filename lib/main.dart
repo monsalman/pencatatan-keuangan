@@ -2,11 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:pencatatan_keuangan/Login%20Register/LandingPage.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
-import 'notification_service.dart';
+import 'services/notification_service.dart';
 
 import 'Login Register/LoginPage.dart';
 import 'Login Register/RegisterPage.dart';
-import 'SpalashScreen.dart';
+import 'services/SpalashScreen.dart';
 
 final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
     FlutterLocalNotificationsPlugin();

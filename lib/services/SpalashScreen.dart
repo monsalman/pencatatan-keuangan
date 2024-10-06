@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'Login Register/LandingPage.dart';
-import 'Page/HomePage.dart';
-import 'Page/HomePage2.dart';
-import 'main.dart';
+import '../Login Register/LandingPage.dart';
+import '../Page/HomePage.dart';
+import '../Page/HomePage2.dart';
+import '../main.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({Key? key}) : super(key: key);
