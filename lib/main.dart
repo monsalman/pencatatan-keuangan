@@ -3,6 +3,7 @@ import 'package:pencatatan_keuangan/Login%20Register/LandingPage.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'services/notification_service.dart';
+import 'package:google_mobile_ads/google_mobile_ads.dart';
 
 import 'Login Register/LoginPage.dart';
 import 'Login Register/RegisterPage.dart';
@@ -13,6 +14,8 @@ final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  
+  await MobileAds.instance.initialize();
 
   final notificationService = NotificationService();
   await notificationService.init();

@@ -5,6 +5,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:intl/intl.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'dart:math' as math;
+import 'package:google_mobile_ads/google_mobile_ads.dart';
 
 class HomePage2 extends StatelessWidget {
   @override
@@ -18,6 +19,8 @@ class HomePage2 extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                AdBannerSection(),
+                SizedBox(height: 20),
                 BalanceSection(),
                 SizedBox(height: 20),
                 WalletSection(),
@@ -34,6 +37,61 @@ class HomePage2 extends StatelessWidget {
       ),
       bottomNavigationBar: CustomBottomNavBar(),
     );
+  }
+}
+
+class AdBannerSection extends StatefulWidget {
+  @override
+  _AdBannerSectionState createState() => _AdBannerSectionState();
+}
+
+class _AdBannerSectionState extends State<AdBannerSection> {
+  BannerAd? _bannerAd;
+  bool _isAdLoaded = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadAd();
+  }
+
+  void _loadAd() {
+    _bannerAd = BannerAd(
+      adUnitId: 'ca-app-pub-3940256099942544/6300978111',
+      size: AdSize.banner,
+      request: AdRequest(),
+      listener: BannerAdListener(
+        onAdLoaded: (ad) {
+          setState(() {
+            _isAdLoaded = true;
+          });
+        },
+        onAdFailedToLoad: (ad, error) {
+          ad.dispose();
+          print('Ad failed to load: $error');
+        },
+      ),
+    );
+
+    _bannerAd?.load();
+  }
+
+  @override
+  void dispose() {
+    _bannerAd?.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_isAdLoaded) {
+      return Container(
+        height: 50,
+        child: AdWidget(ad: _bannerAd!),
+      );
+    } else {
+      return SizedBox(height: 50);
+    }
   }
 }
 
