@@ -57,7 +57,8 @@ class _AdBannerSectionState extends State<AdBannerSection> {
 
   void _loadAd() {
     _bannerAd = BannerAd(
-      adUnitId: 'ca-app-pub-3940256099942544/6300978111',
+      // adUnitId: 'ca-app-pub-3940256099942544/6300978111',
+      adUnitId: 'ca-app-pub-8154228414998679/8359172131',
       size: AdSize.banner,
       request: AdRequest(),
       listener: BannerAdListener(
