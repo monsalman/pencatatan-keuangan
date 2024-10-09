@@ -46,6 +46,7 @@ class NotificationService {
         android: AndroidNotificationDetails(
           'daily_reminder',
           'Daily Reminder',
+          enableVibration: true,
           importance: Importance.max,
           priority: Priority.high,
         ),
