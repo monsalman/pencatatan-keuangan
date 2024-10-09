@@ -44,35 +44,30 @@ class NotificationService {
     tz.setLocalLocation(jakarta);
   }
 
-  Future<void> showDailyReminder() async {
-    Timer.periodic(Duration(hours: 24), (timer) async {
-      final now = DateTime.now();
-      DateTime scheduledTime = DateTime(now.year, now.month, now.day, 20, 45);
-      if (now.isAfter(scheduledTime)) {
-        scheduledTime = scheduledTime.add(Duration(days: 1));
-      }
-      final duration = scheduledTime.difference(now);
-
-      await Future.delayed(duration);
-      await flutterLocalNotificationsPlugin.show(
-        1,
-        'Pengingat Keuangan',
-        'Apakah kamu sudah mencatat keuanganmu hari ini?',
-        NotificationDetails(
-          android: AndroidNotificationDetails(
-            'daily_reminder',
-            'Daily Reminder',
-            importance: Importance.max,
-            priority: Priority.high,
-          ),
-          iOS: DarwinNotificationDetails(),
-          linux: LinuxNotificationDetails(
-            icon: AssetsLinuxIcon('assets/launcher.png'),
-          ),
+  Future<void> scheduleDailyReminder() async {
+    await flutterLocalNotificationsPlugin.zonedSchedule(
+      1,
+      'Pengingat Keuangan',
+      'Apakah kamu sudah mencatat keuanganmu hari ini?',
+      _nextInstanceOf2045(),
+      NotificationDetails(
+        android: AndroidNotificationDetails(
+          'daily_reminder',
+          'Daily Reminder',
+          importance: Importance.max,
+          priority: Priority.high,
         ),
-        payload: 'homepage',
-      );
-    });
+        iOS: DarwinNotificationDetails(),
+        linux: LinuxNotificationDetails(
+          icon: AssetsLinuxIcon('assets/launcher.png'),
+        ),
+      ),
+      androidAllowWhileIdle: true,
+      uiLocalNotificationDateInterpretation:
+          UILocalNotificationDateInterpretation.absoluteTime,
+      matchDateTimeComponents: DateTimeComponents.time,
+      payload: 'homepage',
+    );
   }
 
   Future<void> showTransactionNotification({
