@@ -11,14 +11,19 @@ import 'dart:async';
 
 import 'TambahTransaksi.dart';
 
-class HomePage2 extends StatefulWidget {
+class HomePage extends StatefulWidget {
   @override
-  _HomePage2State createState() => _HomePage2State();
+  _HomePageState createState() => _HomePageState();
 }
 
-class _HomePage2State extends State<HomePage2> with SingleTickerProviderStateMixin {
+class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin {
   late AnimationController _refreshIconController;
   final GlobalKey<RefreshIndicatorState> _refreshIndicatorKey = GlobalKey<RefreshIndicatorState>();
+
+  // Add keys for child widgets that need refreshing
+  final GlobalKey<_BalanceSectionState> _balanceSectionKey = GlobalKey();
+  final GlobalKey<_MonthlyReportSectionState> _monthlyReportSectionKey = GlobalKey();
+  final GlobalKey<_TransaksiState> _transaksiKey = GlobalKey();
 
   @override
   void initState() {
@@ -36,10 +41,19 @@ class _HomePage2State extends State<HomePage2> with SingleTickerProviderStateMix
   }
 
   Future<void> _handleRefresh() async {
-    // Simulate a network request
-    await Future.delayed(Duration(seconds: 2));
-    // Add your refresh logic here
-    // For example: await fetchTotalBalance();
+    _refreshIconController.repeat();
+
+    try {
+      await _balanceSectionKey.currentState?.fetchTotalBalance();
+      await _monthlyReportSectionKey.currentState?.fetchMonthlyData();
+      await _transaksiKey.currentState?.fetchTransactions();
+
+    } catch (e) {
+      print('Error refreshing data: $e');
+    } finally {
+      _refreshIconController.stop();
+      _refreshIconController.reset();
+    }
   }
 
   @override
@@ -67,15 +81,15 @@ class _HomePage2State extends State<HomePage2> with SingleTickerProviderStateMix
                       children: [
                         AdBannerSection(),
                         SizedBox(height: 20),
-                        BalanceSection(),
+                        BalanceSection(key: _balanceSectionKey),
                         SizedBox(height: 20),
                         WalletSection(),
                         SizedBox(height: 20),
-                        MonthlyReportSection(),
+                        MonthlyReportSection(key: _monthlyReportSectionKey),
                         SizedBox(height: 20),
                         Pengeluaran(),
                         SizedBox(height: 20),
-                        Transaksi(),
+                        Transaksi(key: _transaksiKey),
                       ],
                     ),
                   ),
@@ -85,7 +99,17 @@ class _HomePage2State extends State<HomePage2> with SingleTickerProviderStateMix
           ],
         ),
       ),
-      bottomNavigationBar: CustomBottomNavBar(),
+      bottomNavigationBar: CustomBottomNavBar(
+        onTambahPressed: () async {
+          final result = await Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => TaambahTransaksi()),
+          );
+          if (result == true) {
+            _handleRefresh();
+          }
+        },
+      ),
     );
   }
 }
@@ -147,6 +171,8 @@ class _AdBannerSectionState extends State<AdBannerSection> {
 }
 
 class BalanceSection extends StatefulWidget {
+  const BalanceSection({Key? key}) : super(key: key);
+
   @override
   _BalanceSectionState createState() => _BalanceSectionState();
 }
@@ -156,7 +182,6 @@ class _BalanceSectionState extends State<BalanceSection> {
   double totalBalance = 0;
   bool isBalanceVisible = true;
   String _username = '';
-  String _email = '';
 
   @override
   void initState() {
@@ -169,7 +194,6 @@ class _BalanceSectionState extends State<BalanceSection> {
     final user = supabase.auth.currentUser;
     if (user != null) {
       setState(() {
-        _email = user.email ?? '';
         _username = user.userMetadata?['display_name'] ?? '';
       });
     }
@@ -238,7 +262,7 @@ class _BalanceSectionState extends State<BalanceSection> {
             Row(
               children: [
                 Text(
-                  isBalanceVisible ? 'Rp. ${NumberFormat.currency(locale: 'id', symbol: '', decimalDigits: 0).format(totalBalance)}' : 'Rp. ******',
+                  isBalanceVisible ? 'Rp. ${NumberFormat.currency(locale: 'id', symbol: '', decimalDigits: 0).format(totalBalance)}' : 'Rp. ***.***',
                   style: TextStyle(
                       color: Colors.white,
                       fontSize: 20,
@@ -315,6 +339,8 @@ class WalletItem extends StatelessWidget {
 }
 
 class MonthlyReportSection extends StatefulWidget {
+  const MonthlyReportSection({Key? key}) : super(key: key);
+
   @override
   _MonthlyReportSectionState createState() => _MonthlyReportSectionState();
 }
@@ -639,6 +665,8 @@ class ToggleButtons extends StatelessWidget {
 }
 
 class Transaksi extends StatefulWidget {
+  const Transaksi({Key? key}) : super(key: key);
+
   @override
   _TransaksiState createState() => _TransaksiState();
 }
@@ -732,7 +760,7 @@ class _TransaksiState extends State<Transaksi> {
                 String formattedDate = 'No date';
                 if (transaction['tanggal'] != null) {
                   DateTime date = DateTime.parse(transaction['tanggal']);
-                  formattedDate = DateFormat('dd-MMM-yyyy', 'id_ID').format(date);
+                  formattedDate = DateFormat('dd MMM yyyy', 'id_ID').format(date);
                 }
               
                 return Column(
@@ -822,6 +850,10 @@ class ExpenseItem extends StatelessWidget {
 }
 
 class CustomBottomNavBar extends StatefulWidget {
+  final VoidCallback onTambahPressed;
+
+  const CustomBottomNavBar({Key? key, required this.onTambahPressed}) : super(key: key);
+
   @override
   _CustomBottomNavBarState createState() => _CustomBottomNavBarState();
 }
@@ -831,8 +863,8 @@ class _CustomBottomNavBarState extends State<CustomBottomNavBar> {
 
   void _onItemTapped(int index) async {
     if (index == 2) {
-      Navigator.push(context, MaterialPageRoute(builder: (context) => TaambahTransaksi()));
-    } else if (index == 4) { // Assuming 'Profil' is at index 4
+      widget.onTambahPressed();
+    } else if (index == 4) {
       try {
         await Supabase.instance.client.auth.signOut();
         Navigator.of(context).pushReplacementNamed('loginPage');

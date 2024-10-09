@@ -24,7 +24,7 @@ class _SplashScreenState extends State<SplashScreen> {
     final user = Supabase.instance.client.auth.currentUser;
     if (user != null) {
       Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (context) => HomePage2()),
+        MaterialPageRoute(builder: (context) => HomePage()),
       );
     } else {
       Navigator.of(context).pushReplacement(
