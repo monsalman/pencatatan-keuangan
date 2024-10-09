@@ -1,49 +1,26 @@
 import 'package:flutter/material.dart';
-
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../main.dart';
+import 'LoginPage.dart';
 
-class RegisterPage extends StatelessWidget {
+class RegisterPage extends StatefulWidget {
   const RegisterPage({Key? key}) : super(key: key);
 
   @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFF252B48),
-      body: SafeArea(
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            return SingleChildScrollView(
-              child: ConstrainedBox(
-                constraints: BoxConstraints(minHeight: constraints.maxHeight),
-                child: IntrinsicHeight(
-                  child: Padding(
-                    padding: const EdgeInsets.all(20.0),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _buildBackButton(context),
-                        const SizedBox(height: 20),
-                        _buildTitle(),
-                        const SizedBox(height: 40),
-                        _buildInputField('Username'),
-                        const SizedBox(height: 20),
-                        _buildInputField('Email'),
-                        const SizedBox(height: 20),
-                        _buildInputField('Password', isPassword: true),
-                        const SizedBox(height: 40),
-                        _buildRegisterButton(),
-                        const Spacer(),
-                        _buildLoginPrompt(context),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            );
-          },
-        ),
-      ),
-    );
+  _RegisterPageState createState() => _RegisterPageState();
+}
+
+class _RegisterPageState extends State<RegisterPage> {
+  final _displayNameController = TextEditingController();
+  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
+
+  @override
+  void dispose() {
+    _displayNameController.dispose();
+    _emailController.dispose();
+    _passwordController.dispose();
+    super.dispose();
   }
 
   Widget _buildBackButton(BuildContext context) {
@@ -69,8 +46,9 @@ class RegisterPage extends StatelessWidget {
     );
   }
 
-  Widget _buildInputField(String label, {bool isPassword = false}) {
+  Widget _buildInputField(String label, TextEditingController controller, {bool isPassword = false}) {
     return TextField(
+      controller: controller,
       obscureText: isPassword,
       style: const TextStyle(color: Colors.white),
       cursorColor: WarnaSecondary,
@@ -96,9 +74,7 @@ class RegisterPage extends StatelessWidget {
     return SizedBox(
       width: double.infinity,
       child: ElevatedButton(
-        onPressed: () {
-          // Handle registration
-        },
+        onPressed: _handleSignUp,
         style: ElevatedButton.styleFrom(
           backgroundColor: const Color(0xFFEBF400),
           foregroundColor: const Color(0xFF332941),
@@ -117,6 +93,36 @@ class RegisterPage extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  Future<void> _handleSignUp() async {
+    try {
+      final AuthResponse response = await Supabase.instance.client.auth.signUp(
+        email: _emailController.text,
+        password: _passwordController.text,
+        data: {'display_name': _displayNameController.text},
+      );
+
+      if (response.user != null) {
+        // Update the user's metadata with the display name
+        await Supabase.instance.client.auth.updateUser(
+          UserAttributes(
+            data: {'display_name': _displayNameController.text},
+          ),
+        );
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Pendaftaran berhasil! Silakan login kembali.')),
+        );
+        Navigator.push(context, MaterialPageRoute(builder: (context) => LoginPage()));
+      } else {
+        throw Exception('Pendaftaran gagal');
+      }
+    } catch (error) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error: ${error.toString()}')),
+      );
+    }
   }
 
   Widget _buildLoginPrompt(BuildContext context) {
@@ -147,6 +153,47 @@ class RegisterPage extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xFF252B48),
+      body: SafeArea(
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            return SingleChildScrollView(
+              child: ConstrainedBox(
+                constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                child: IntrinsicHeight(
+                  child: Padding(
+                    padding: const EdgeInsets.all(20.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _buildBackButton(context),
+                        const SizedBox(height: 20),
+                        _buildTitle(),
+                        const SizedBox(height: 40),
+                        _buildInputField('Username', _displayNameController),
+                        const SizedBox(height: 20),
+                        _buildInputField('Email', _emailController),
+                        const SizedBox(height: 20),
+                        _buildInputField('Password', _passwordController, isPassword: true),
+                        const SizedBox(height: 40),
+                        _buildRegisterButton(),
+                        const Spacer(),
+                        _buildLoginPrompt(context),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            );
+          },
+        ),
+      ),
     );
   }
 }

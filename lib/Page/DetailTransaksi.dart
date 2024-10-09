@@ -3,7 +3,26 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../main.dart';
-import 'HomePage.dart';
+
+class Transaction {
+  final int id;
+  final String kategori;
+  final double nilai;
+  final String jenis;
+  final DateTime tanggal;
+  final String catatan;
+  final String? imageUrl;
+
+  Transaction({
+    required this.id,
+    required this.kategori,
+    required this.nilai,
+    required this.jenis,
+    required this.tanggal,
+    required this.catatan,
+    this.imageUrl,
+  });
+}
 
 class DetailTransaksi extends StatelessWidget {
   final Transaction transaction;

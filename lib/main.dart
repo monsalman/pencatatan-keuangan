@@ -22,8 +22,8 @@ Future<void> main() async {
   await notificationService.showDailyReminder();
 
   await Supabase.initialize(
-    url: 'https://yxanyfzuxjrwzvdnzxud.supabase.co',
-    anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl4YW55Znp1eGpyd3p2ZG56eHVkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MjY4NTYxNTQsImV4cCI6MjA0MjQzMjE1NH0.vlAGUp1dTk8quU77vAThNnHKtIzBGLAiR0rC1eLlSsM',
+    url: 'https://fuhrwueadogwbuwajytq.supabase.co',
+    anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ1aHJ3dWVhZG9nd2J1d2FqeXRxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Mjg0MDY2MjgsImV4cCI6MjA0Mzk4MjYyOH0.rw1Sk3ugSGkmLONgjU0imqPuEbtm0vdMipe50dguNzo',
   );
 
   runApp(const MyApp());
@@ -42,7 +42,7 @@ class MyApp extends StatelessWidget {
         'daftarPage': (context) => RegisterPage(),
         'loginPage': (context) => LoginPage(),
         'landingPage': (context) => LandingPage()
-      },
+      },  
       theme: ThemeData(
         primaryColor: Colors.white,
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.white),

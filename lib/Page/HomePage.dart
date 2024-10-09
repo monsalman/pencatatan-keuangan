@@ -1,158 +1,168 @@
 import 'package:flutter/material.dart';
-import 'package:syncfusion_flutter_charts/charts.dart';
-import 'package:flutter/cupertino.dart';
+import 'package:fl_chart/fl_chart.dart';
+import 'package:pencatatan_keuangan/main.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:intl/intl.dart';
-
-import '../main.dart';
+import 'package:intl/date_symbol_data_local.dart';
+import 'dart:math' as math;
+import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'DetailTransaksi.dart';
-import 'Pemasukan.dart';
-import 'Pengeluaran.dart';
-import '../Login Register/LoginPage.dart';
+import 'dart:async';
 
-// Add this extension
-extension StringExtension on String {
-  String capitalize() {
-    return "${this[0].toUpperCase()}${this.substring(1).toLowerCase()}";
+import 'TambahTransaksi.dart';
+
+class HomePage2 extends StatefulWidget {
+  @override
+  _HomePage2State createState() => _HomePage2State();
+}
+
+class _HomePage2State extends State<HomePage2> with SingleTickerProviderStateMixin {
+  late AnimationController _refreshIconController;
+  final GlobalKey<RefreshIndicatorState> _refreshIndicatorKey = GlobalKey<RefreshIndicatorState>();
+
+  @override
+  void initState() {
+    super.initState();
+    _refreshIconController = AnimationController(
+      vsync: this,
+      duration: Duration(seconds: 1),
+    );
+  }
+
+  @override
+  void dispose() {
+    _refreshIconController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _handleRefresh() async {
+    // Simulate a network request
+    await Future.delayed(Duration(seconds: 2));
+    // Add your refresh logic here
+    // For example: await fetchTotalBalance();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Color(0xFF252B48),
+      body: RefreshIndicator(
+        key: _refreshIndicatorKey,
+        onRefresh: _handleRefresh,
+        backgroundColor: Colors.white,
+        color: Color(0xFF252B48),
+        strokeWidth: 3,
+        displacement: 40,
+        edgeOffset: 20,
+        child: CustomScrollView(
+          physics: AlwaysScrollableScrollPhysics(),
+          slivers: [
+            SliverToBoxAdapter(
+              child: SafeArea(
+                child: SingleChildScrollView(
+                  child: Padding(
+                    padding: EdgeInsets.all(16.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        AdBannerSection(),
+                        SizedBox(height: 20),
+                        BalanceSection(),
+                        SizedBox(height: 20),
+                        WalletSection(),
+                        SizedBox(height: 20),
+                        MonthlyReportSection(),
+                        SizedBox(height: 20),
+                        Pengeluaran(),
+                        SizedBox(height: 20),
+                        Transaksi(),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+      bottomNavigationBar: CustomBottomNavBar(),
+    );
   }
 }
 
-class HomePage extends StatefulWidget {
+class AdBannerSection extends StatefulWidget {
   @override
-  _HomePageState createState() => _HomePageState();
+  _AdBannerSectionState createState() => _AdBannerSectionState();
 }
 
-class _HomePageState extends State<HomePage>
-    with SingleTickerProviderStateMixin {
-  bool _isExpanded = false;
-  late AnimationController _animationController;
-  late Animation<Offset> _slideAnimationPemasukan;
-  late Animation<Offset> _slideAnimationPengeluaran;
-  List<Transaction> _transactions = [];
-  bool _isLoading = true;
-  ScrollController _scrollController = ScrollController();
-  bool _isHeaderCollapsed = false;
-  bool _isAppBarExpanded = true;
+class _AdBannerSectionState extends State<AdBannerSection> {
+  BannerAd? _bannerAd;
+  bool _isAdLoaded = false;
 
-  double _totalPemasukan = 0;
-  double _totalPengeluaran = 0;
-  double _totalSaldo = 0;
+  @override
+  void initState() {
+    super.initState();
+    _loadAd();
+  }
 
+  void _loadAd() {
+    _bannerAd = BannerAd(
+      // adUnitId: 'ca-app-pub-3940256099942544/6300978111',
+      adUnitId: 'ca-app-pub-8154228414998679/8359172131',
+      size: AdSize.banner,
+      request: AdRequest(),
+      listener: BannerAdListener(
+        onAdLoaded: (ad) {
+          setState(() {
+            _isAdLoaded = true;
+          });
+        },
+        onAdFailedToLoad: (ad, error) {
+          ad.dispose();
+          print('Ad failed to load: $error');
+        },
+      ),
+    );
+
+    _bannerAd?.load();
+  }
+
+  @override
+  void dispose() {
+    _bannerAd?.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_isAdLoaded) {
+      return Container(
+        height: 50,
+        child: AdWidget(ad: _bannerAd!),
+      );
+    } else {
+      return SizedBox(height: 0);
+    }
+  }
+}
+
+class BalanceSection extends StatefulWidget {
+  @override
+  _BalanceSectionState createState() => _BalanceSectionState();
+}
+
+class _BalanceSectionState extends State<BalanceSection> {
+  final supabase = Supabase.instance.client;
+  double totalBalance = 0;
+  bool isBalanceVisible = true;
   String _username = '';
   String _email = '';
 
   @override
   void initState() {
     super.initState();
-    _animationController = AnimationController(
-      vsync: this,
-      duration: Duration(milliseconds: 600),
-    );
-
-    _slideAnimationPemasukan = Tween<Offset>(
-      begin: Offset(0, 1),
-      end: Offset.zero,
-    ).animate(CurvedAnimation(
-      parent: _animationController,
-      curve: Interval(0.0, 0.6,
-          curve: Curves.easeOutCubic),
-    ));
-
-    _slideAnimationPengeluaran = Tween<Offset>(
-      begin: Offset(0, 1),
-      end: Offset.zero,
-    ).animate(CurvedAnimation(
-      parent: _animationController,
-      curve: Interval(0.4, 1.0,
-          curve: Curves.easeOutCubic),
-    ));
-
-    _ambilTransaksi();
-    _hitungTotal();
     _getUserInfo();
-
-    _scrollController.addListener(() {
-      if (_scrollController.offset > 100 && !_isHeaderCollapsed) {
-        setState(() {
-          _isHeaderCollapsed = true;
-        });
-      } else if (_scrollController.offset <= 100 && _isHeaderCollapsed) {
-        setState(() {
-          _isHeaderCollapsed = false;
-        });
-      }
-
-      setState(() {
-        _isAppBarExpanded = _scrollController.hasClients &&
-            _scrollController.offset < (200 - kToolbarHeight);
-      });
-    });
-  }
-
-  Future<void> _ambilTransaksi() async {
-    setState(() => _isLoading = true);
-    try {
-      final user = supabase.auth.currentUser;
-      if (user == null) {
-        throw Exception('Pengguna belum masuk');
-      }
-
-      final response = await supabase
-          .from('transaksi')
-          .select()
-          .eq('user_id', user.id)
-          .order('tanggal', ascending: false);
-
-      setState(() {
-        _transactions = (response as List<dynamic>)
-            .map((json) => Transaction.fromJson(json))
-            .toList();
-        _isLoading = false;
-      });
-
-      // Tambahkan ini untuk debugging
-      _transactions.forEach((transaction) {
-        print('Transaction ID: ${transaction.id}, Image URL: ${transaction.imageUrl}');
-      });
-
-    } catch (e) {
-      print('Kesalahan saat mengambil transaksi: $e');
-      setState(() => _isLoading = false);
-    }
-  }
-
-  Future<void> _hitungTotal() async {
-    try {
-      final user = Supabase.instance.client.auth.currentUser;
-      if (user == null) {
-        throw Exception('Pengguna belum masuk');
-      }
-
-      final responsePemasukan = await Supabase.instance.client
-          .from('transaksi')
-          .select('nilai')
-          .eq('user_id', user.id)
-          .eq('jenis', 'pemasukan');
-
-      final responsePengeluaran = await Supabase.instance.client
-          .from('transaksi')
-          .select('nilai')
-          .eq('user_id', user.id)
-          .eq('jenis', 'pengeluaran');
-
-      double totalPemasukan = (responsePemasukan as List<dynamic>)
-          .fold(0, (sum, item) => sum + (item['nilai'] as num));
-      double totalPengeluaran = (responsePengeluaran as List<dynamic>)
-          .fold(0, (sum, item) => sum + (item['nilai'] as num));
-
-      setState(() {
-        _totalPemasukan = totalPemasukan;
-        _totalPengeluaran = totalPengeluaran;
-        _totalSaldo = _totalPemasukan - _totalPengeluaran;
-      });
-    } catch (e) {
-      print('Kesalahan saat mengambil total: $e');
-    }
+    fetchTotalBalance();
   }
 
   Future<void> _getUserInfo() async {
@@ -160,440 +170,715 @@ class _HomePageState extends State<HomePage>
     if (user != null) {
       setState(() {
         _email = user.email ?? '';
-        _username = user.userMetadata?['username'] ?? '';
+        _username = user.userMetadata?['display_name'] ?? '';
       });
     }
   }
+  
+  Future<void> fetchTotalBalance() async {
+    final user = supabase.auth.currentUser;
+    if (user == null) return;
 
-  Future<void> _logout(BuildContext context) async {
-    await Supabase.instance.client.auth.signOut();
-    Navigator.pushAndRemoveUntil(
-      context,
-      MaterialPageRoute(builder: (context) => LoginPage()),
-      (Route<dynamic> route) => false,
-    );
+    try {
+      final response = await supabase
+          .from('transaksi')
+          .select('jenis, nilai')
+          .eq('user_id', user.id);
+
+      final transactions = List<Map<String, dynamic>>.from(response);
+
+      double balance = 0;
+      for (var transaction in transactions) {
+        if (transaction['jenis'] == 'pemasukan') {
+          balance += transaction['nilai'] as double;
+        } else if (transaction['jenis'] == 'pengeluaran') {
+          balance -= transaction['nilai'] as double;
+        }
+      }
+
+      setState(() {
+        totalBalance = balance;
+      });
+    } catch (error) {
+      print('Error fetching total balance: $error');
+    }
   }
 
-  @override
-  void dispose() {
-    _animationController.dispose();
-    _scrollController.dispose();
-    super.dispose();
+  void toggleBalanceVisibility() {
+    setState(() {
+      isBalanceVisible = !isBalanceVisible;
+    });
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: WarnaUtama,
-      body: SafeArea(
-        child: CustomScrollView(
-          controller: _scrollController,
-          slivers: [
-            SliverAppBar(
-              expandedHeight: 280,
-              floating: false,
-              pinned: true,
-              backgroundColor: _isAppBarExpanded ? WarnaUtama : WarnaSecondary,
-              flexibleSpace: FlexibleSpaceBar(
-                background: _buildHeader(),
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Selamat datang, $_username',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
               ),
-              title: _isHeaderCollapsed ? Text('Ringkasan Keuangan') : null,
             ),
-            SliverToBoxAdapter(
-              child: _isLoading
-                  ? Center(child: CircularProgressIndicator(color: WarnaSecondary))
-                  : _buildTransactionList(),
+            SizedBox(height: 4),
+            Text(
+              'Jumlah Saldo',
+              style: TextStyle(
+                  color: Color(0xFF8E7AA9),
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500),
+            ),
+            SizedBox(height: 4),
+            Row(
+              children: [
+                Text(
+                  isBalanceVisible ? 'Rp. ${NumberFormat.currency(locale: 'id', symbol: '', decimalDigits: 0).format(totalBalance)}' : 'Rp. ******',
+                  style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 20,
+                      fontWeight: FontWeight.w600),
+                ),
+                SizedBox(width: 8),
+                GestureDetector(
+                  onTap: toggleBalanceVisibility,
+                  child: Icon(
+                    isBalanceVisible ? Icons.remove_red_eye : Icons.visibility_off,
+                    color: Colors.white,
+                    size: 16,
+                  ),
+                ),
+              ],
             ),
           ],
         ),
-      ),
-      floatingActionButton: _buildFloatingActionButtons(),
+        Icon(Icons.notifications, color: Colors.white, size: 24),
+      ],
     );
   }
+}
 
-  Widget _buildHeader() {
+class WalletSection extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
     return Container(
-      padding: EdgeInsets.all(20),
+      padding: EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: WarnaSecondary,
-        borderRadius: BorderRadius.only(
-          bottomRight: Radius.circular(35),
-        ),
+        color: Color(0xFF2F243D),
+        borderRadius: BorderRadius.circular(15),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Selamat datang, $_username',
+            'Dompet Saya',
             style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-              color: WarnaUtama,
-            ),
+                color: Colors.white, fontSize: 14, fontWeight: FontWeight.w500),
           ),
           SizedBox(height: 10),
-          GestureDetector(
-            onTap: () => _logout(context),
-            child: Text(
-              'Ringkasan Keuangan',
+          Divider(color: Colors.grey.withOpacity(0.4)),
+          SizedBox(height: 10),
+          WalletItem(title: 'Tunai', amount: 'Rp. 500,000'),
+          SizedBox(height: 10),
+          Divider(color: Colors.grey.withOpacity(0.4)),
+          SizedBox(height: 10),
+          WalletItem(title: 'Kartu Kredit', amount: 'Rp. 500,000'),
+          SizedBox(height: 10),
+        ],
+      ),
+    );
+  }
+}
+
+class WalletItem extends StatelessWidget {
+  final String title;
+  final String amount;
+
+  const WalletItem({Key? key, required this.title, required this.amount})
+      : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(title, style: TextStyle(color: Colors.white, fontSize: 12)),
+        Text(amount, style: TextStyle(color: Colors.white, fontSize: 12)),
+      ],
+    );
+  }
+}
+
+class MonthlyReportSection extends StatefulWidget {
+  @override
+  _MonthlyReportSectionState createState() => _MonthlyReportSectionState();
+}
+
+class _MonthlyReportSectionState extends State<MonthlyReportSection> {
+  final supabase = Supabase.instance.client;
+  double totalPengeluaran = 0;
+  double totalPemasukan = 0;
+  List<FlSpot> chartData = [];
+
+  @override
+  void initState() {
+    super.initState();
+    initializeDateFormatting('id_ID', null);
+    fetchMonthlyData();
+  }
+
+  Future<void> fetchMonthlyData() async {
+    final user = supabase.auth.currentUser;
+    if (user == null) return;
+
+    final now = DateTime.now();
+    final startOfMonth = DateTime(now.year, now.month, 1);
+    final endOfMonth = DateTime(now.year, now.month + 1, 0);
+
+    try {
+      final response = await supabase
+          .from('transaksi')
+          .select()
+          .eq('user_id', user.id)
+          .gte('tanggal', startOfMonth.toIso8601String())
+          .lte('tanggal', endOfMonth.toIso8601String());
+
+      final transactions = List<Map<String, dynamic>>.from(response);
+
+      double pengeluaran = 0;
+      double pemasukan = 0;
+      Map<int, double> dailyBalance = {};
+
+      for (var transaction in transactions) {
+        final amount = transaction['nilai'] as double;
+        final date = DateTime.parse(transaction['tanggal']);
+        final day = date.day;
+
+        if (transaction['jenis'] == 'pengeluaran') {
+          pengeluaran += amount;
+          dailyBalance[day] = (dailyBalance[day] ?? 0) - amount;
+        } else if (transaction['jenis'] == 'pemasukan') {
+          pemasukan += amount;
+          dailyBalance[day] = (dailyBalance[day] ?? 0) + amount;
+        }
+      }
+
+      List<FlSpot> spots = [];
+      double cumulativeBalance = 0;
+      for (int i = 1; i <= endOfMonth.day; i++) {
+        cumulativeBalance += dailyBalance[i] ?? 0;
+        spots.add(FlSpot(i.toDouble(), cumulativeBalance));
+      }
+
+      setState(() {
+        totalPengeluaran = pengeluaran;
+        totalPemasukan = pemasukan;
+        chartData = spots;
+      });
+    } catch (error) {
+      print('Error fetching monthly data: $error');
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              'Laporan Bulanan',
               style: TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-                color: WarnaUtama,
+                color: Colors.white,
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
               ),
             ),
+            Text(
+              'Lihat Semua',
+              style: TextStyle(
+                color: Colors.green,
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
+        ),
+        SizedBox(height: 8),
+        Container(
+          padding: EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Color(0xFF2F253D),
+            borderRadius: BorderRadius.circular(15),
           ),
-          SizedBox(height: 20),
-          Row(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Expanded(
-                flex: 2,
-                child: SizedBox(
-                  height: 150,
-                  child: SfCircularChart(
-                    margin: EdgeInsets.zero,
-                    series: <CircularSeries>[
-                      DoughnutSeries<ChartData, String>(
-                        dataSource: [
-                          ChartData('Pemasukan', _totalPemasukan, Colors.green),
-                          ChartData('Pengeluaran', _totalPengeluaran, Colors.red),
-                        ],
-                        pointColorMapper: (ChartData data, _) => data.color,
-                        xValueMapper: (ChartData data, _) => data.category,
-                        yValueMapper: (ChartData data, _) => data.value,
-                        innerRadius: '60%',
-                      )
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Total pengeluaran',
+                        style: TextStyle(color: Colors.grey, fontSize: 14),
+                      ),
+                      Text(
+                        NumberFormat.currency(locale: 'id', symbol: 'Rp ', decimalDigits: 0).format(totalPengeluaran),
+                        style: TextStyle(
+                            color: Colors.red,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w700),
+                      ),
                     ],
+                  ),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Text(
+                        'Total pemasukan',
+                        style: TextStyle(color: Colors.grey, fontSize: 14),
+                      ),
+                      Text(
+                        NumberFormat.currency(locale: 'id', symbol: 'Rp ', decimalDigits: 0).format(totalPemasukan),
+                        style: TextStyle(
+                            color: Colors.green,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w700),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+              Divider(color: Colors.grey.withOpacity(0.4)),
+              SizedBox(height: 16),
+              Container(
+                height: 220,
+                child: LineChart(
+                  LineChartData(
+                    gridData: FlGridData(show: false),
+                    titlesData: FlTitlesData(
+                      bottomTitles: AxisTitles(
+                        sideTitles: SideTitles(
+                          showTitles: true,
+                          reservedSize: 22,
+                          interval: 5,
+                          getTitlesWidget: (value, meta) {
+                            if (value % 5 == 0) {
+                              final date = DateTime(DateTime.now().year, DateTime.now().month, value.toInt());
+                            }
+                            return Text('');
+                          },
+                        ),
+                      ),
+                      leftTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                      topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                      rightTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                    ),
+                    borderData: FlBorderData(show: false),
+                    minX: 1,
+                    maxX: 31,
+                    minY: chartData.isEmpty ? 0 : chartData.map((spot) => spot.y).reduce(math.min),
+                    maxY: chartData.isEmpty ? 30000 : chartData.map((spot) => spot.y).reduce(math.max),
+                    lineBarsData: [
+                      LineChartBarData(
+                        spots: chartData,
+                        isCurved: true,
+                        color: Colors.green,
+                        barWidth: 3,
+                        isStrokeCapRound: true,
+                        dotData: FlDotData(show: false),
+                        belowBarData: BarAreaData(
+                          show: true,
+                          color: Colors.green.withOpacity(0.2),
+                        ),
+                      ),
+                    ],
+                    lineTouchData: LineTouchData(
+                      enabled: true,
+                      touchTooltipData: LineTouchTooltipData(
+                        tooltipRoundedRadius: 8,
+                        getTooltipItems: (List<LineBarSpot> touchedBarSpots) {
+                          return touchedBarSpots.map((barSpot) {
+                            final flSpot = barSpot;
+                            final date = DateTime(DateTime.now().year, DateTime.now().month, flSpot.x.toInt());
+                            return LineTooltipItem(
+                              '${NumberFormat.currency(locale: 'id', symbol: 'Rp ', decimalDigits: 0).format(flSpot.y)}',
+                              TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                              ),
+                              children: [
+                                TextSpan(
+                                  text: '\n${DateFormat("dd - MMM", 'id_ID').format(date)}',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.normal,
+                                    fontSize: 12,
+                                  ),
+                                ),
+                              ],
+                            );
+                          }).toList();
+                        },
+                      ),
+                      handleBuiltInTouches: true,
+                    ),
                   ),
                 ),
               ),
-              Expanded(
-                flex: 3,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _buildFinanceSummaryItem(
-                      'Pemasukan',
-                      '+ Rp. ${NumberFormat('#,##0').format(_totalPemasukan)}',
-                      Colors.green
-                    ),
-                    SizedBox(height: 10),
-                    _buildFinanceSummaryItem(
-                      'Pengeluaran',
-                      '- Rp. ${NumberFormat('#,##0').format(_totalPengeluaran)}',
-                      Colors.red
-                    ),
-                    SizedBox(height: 10),
-                    _buildFinanceSummaryItem(
-                      'Saldo',
-                      'Rp. ${NumberFormat('#,##0').format(_totalSaldo)}',
-                      WarnaUtama
-                    ),
-                  ],
-                ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class Pengeluaran extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              'Pengeluaran Teratas',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            Text(
+              'Lihat Semua',
+              style: TextStyle(
+                color: Colors.green,
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
+        ),
+        SizedBox(height: 8),
+        Container(
+          padding: EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Color(0xFF2F253D),
+            borderRadius: BorderRadius.circular(15),
+          ),
+          child: Column(
+            children: [
+              ToggleButtons(),
+              SizedBox(height: 16),
+              ExpenseItem(
+                title: 'Belanja',
+                amount: '5 September 2024',
+                value: 'Rp. 4,000,000',
+                isIncome: false,
+              ),
+              SizedBox(height: 12),
+              ExpenseItem(
+                title: 'Investasi',
+                amount: '20 September 2024',
+                value: 'Rp. 4,000,000',
+                isIncome: false,
               ),
             ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class ToggleButtons extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Color(0xFF32374F),
+        borderRadius: BorderRadius.circular(5),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Container(
+              padding: EdgeInsets.symmetric(vertical: 8),
+              alignment: Alignment.center,
+              child: Text('Minggu',
+                  style: TextStyle(color: Color(0xFF6D759E), fontSize: 12)),
+            ),
+          ),
+          Expanded(
+            child: Container(
+              padding: EdgeInsets.symmetric(vertical: 8),
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: Color(0xFF495071),
+                borderRadius: BorderRadius.circular(5),
+              ),
+              child: Text('Bulan',
+                  style: TextStyle(color: Colors.white, fontSize: 12)),
+            ),
           ),
         ],
       ),
     );
   }
+}
 
-  Widget _buildFinanceSummaryItem(String label, String amount, Color color) {
-    return Row(
-      children: [
-        Container(
-          width: 12,
-          height: 12,
-          decoration: BoxDecoration(
-            color: color,
-            shape: BoxShape.circle,
-          ),
-        ),
-        SizedBox(width: 8),
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 14,
-                color: WarnaUtama.withOpacity(0.7),
-              ),
-            ),
-            Text(
-              amount,
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-                color: WarnaUtama,
-              ),
-            ),
-          ],
-        ),
-      ],
-    );
+class Transaksi extends StatefulWidget {
+  @override
+  _TransaksiState createState() => _TransaksiState();
+}
+
+class _TransaksiState extends State<Transaksi> {
+  final supabase = Supabase.instance.client;
+  List<Map<String, dynamic>> transactions = [];
+
+  @override
+  void initState() {
+    super.initState();
+    fetchTransactions();
   }
 
-  Widget _buildTransactionList() {
-    Map<String, List<Transaction>> groupedTransactions = {};
-    for (var transaction in _transactions) {
-      String dateKey = DateFormat('dd MMM yyyy').format(transaction.tanggal);
-      if (!groupedTransactions.containsKey(dateKey)) {
-        groupedTransactions[dateKey] = [];
-      }
-      groupedTransactions[dateKey]!.add(transaction);
+  Future<void> fetchTransactions() async {
+    final user = supabase.auth.currentUser;
+    if (user == null) return;
+
+    try {
+      final response = await supabase
+          .from('transaksi')
+          .select()
+          .eq('user_id', user.id)
+          .order('tanggal', ascending: false);
+
+      setState(() {
+        transactions = List<Map<String, dynamic>>.from(response);
+      });
+    } catch (error) {
+      print('Error fetching transactions: $error');
     }
-
-    return ListView.builder(
-      physics: NeverScrollableScrollPhysics(),
-      shrinkWrap: true,
-      itemCount: groupedTransactions.length,
-      itemBuilder: (context, index) {
-        String dateKey = groupedTransactions.keys.elementAt(index);
-        List<Transaction> dayTransactions = groupedTransactions[dateKey]!;
-
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Padding(
-              padding:
-                  const EdgeInsets.symmetric(vertical: 8.0, horizontal: 16.0),
-              child: Text(
-                dateKey,
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16,
-                  color: Colors.grey[600],
-                ),
-              ),
-            ),
-            ...dayTransactions
-                .map((transaction) => _buildTransactionItem(transaction))
-                .toList(),
-          ],
-        );
-      },
-    );
   }
 
-  Widget _buildTransactionItem(Transaction transaction) {
-    bool isIncome = transaction.jenis == 'pemasukan';
-    Color transactionColor = isIncome ? Colors.green : Colors.red;
-    IconData transactionIcon = isIncome
-        ? CupertinoIcons.arrow_up_right
-        : CupertinoIcons.arrow_down_right;
+  void _navigateToDetailTransaksi(BuildContext context, Map<String, dynamic> transactionData) {
+    final transaction = Transaction(
+      id: transactionData['id'],
+      kategori: transactionData['kategori'] ?? 'Uncategorized',
+      nilai: transactionData['nilai'] ?? 0,
+      jenis: transactionData['jenis'] ?? '',
+      tanggal: transactionData['tanggal'] != null ? DateTime.parse(transactionData['tanggal']) : DateTime.now(),
+      catatan: transactionData['catatan'] ?? '',
+      imageUrl: transactionData['image_url'],
+    );
 
-    return Card(
-      margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-      elevation: 2,
-      color: WarnaSecondary,
-      child: InkWell(  // Tambahkan ini
-        onTap: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => DetailTransaksi(transaction: transaction),
-            ),
-          );
-        },
-        child: ListTile(
-          contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          leading: Container(
-            padding: EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: transactionColor.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Icon(
-              transactionIcon,
-              color: transactionColor,
-              size: 28,
-            ),
-          ),
-          title: Text(
-            transaction.kategori,
-            style: TextStyle(
-                fontWeight: FontWeight.bold, fontSize: 16, color: WarnaUtama),
-          ),
-          subtitle: Text(
-            transaction.catatan,
-            style: TextStyle(color: WarnaUtama.withOpacity(0.6)),
-          ),
-          trailing: Text(
-            '${isIncome ? '+' : '-'} Rp. ${NumberFormat('#,##0').format(transaction.nilai)}',
-            style: TextStyle(
-              fontWeight: FontWeight.bold,
-              color: transactionColor,
-              fontSize: 16,
-            ),
-          ),
-        ),
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => DetailTransaksi(transaction: transaction),
       ),
     );
   }
 
-  Widget _buildFloatingActionButtons() {
+  @override
+  Widget build(BuildContext context) {
     return Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.end,
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        AnimatedBuilder(
-          animation: _animationController,
-          builder: (context, child) {
-            return Visibility(
-              visible: _isExpanded ||
-                  _animationController.status == AnimationStatus.reverse,
-              child: SlideTransition(
-                position: _slideAnimationPemasukan,
-                child: _buildActionButton(
-                  label: 'Pemasukan',
-                  icon: CupertinoIcons.arrow_up_right,
-                  color: Colors.green,
-                  onPressed: () async {
-                    final result = await Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (context) => Pemasukan()),
-                    );
-                    if (result == true) {
-                      _ambilTransaksi();
-                      _hitungTotal();
-                    }
-                  },
-                ),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              'Transaksi Terkini',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
               ),
-            );
-          },
-        ),
-        SizedBox(height: 10),
-        AnimatedBuilder(
-          animation: _animationController,
-          builder: (context, child) {
-            return Visibility(
-              visible: _isExpanded ||
-                  _animationController.status == AnimationStatus.reverse,
-              child: SlideTransition(
-                position: _slideAnimationPengeluaran,
-                child: _buildActionButton(
-                  label: 'Pengeluaran',
-                  icon: CupertinoIcons.arrow_down_right,
-                  color: Colors.red,
-                  onPressed: () async {
-                    final result = await Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (context) => Pengeluaran()),
-                    );
-                    if (result == true) {
-                      _ambilTransaksi();
-                      _hitungTotal();
-                    }
-                  },
-                ),
+            ),
+            Text(
+              'Lihat Semua',
+              style: TextStyle(
+                color: WarnaSecondary,
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
               ),
-            );
-          },
+            ),
+          ],
         ),
-        SizedBox(height: 10),
-        FloatingActionButton(
-          onPressed: () {
-            setState(() {
-              _isExpanded = !_isExpanded;
-              if (_isExpanded) {
-                _animationController.forward();
-              } else {
-                _animationController.reverse();
-              }
-            });
-          },
-          child: AnimatedSwitcher(
-            duration: Duration(milliseconds: 600),
-            transitionBuilder: (Widget child, Animation<double> animation) {
-              return RotationTransition(
-                turns: animation,
-                child: child,
-              );
-            },
-            child: _isExpanded
-                ? Icon(Icons.close, key: ValueKey('close'))
-                : Icon(Icons.add, key: ValueKey('add')),
+        SizedBox(height: 8),
+        if (transactions.isNotEmpty)
+          Container(
+            padding: EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Color(0xFF2F253D),
+              borderRadius: BorderRadius.circular(15),
+            ),
+            child: Column(
+              children: transactions.asMap().entries.map((entry) {
+                int index = entry.key;
+                var transaction = entry.value;
+                String formattedDate = 'No date';
+                if (transaction['tanggal'] != null) {
+                  DateTime date = DateTime.parse(transaction['tanggal']);
+                  formattedDate = DateFormat('dd-MMM-yyyy', 'id_ID').format(date);
+                }
+              
+                return Column(
+                  children: [
+                    GestureDetector(
+                      onTap: () => _navigateToDetailTransaksi(context, transaction),
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: Color(0xFF2F253D),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Padding(
+                          padding: EdgeInsets.all(12),
+                          child: ExpenseItem(
+                            title: transaction['kategori'] ?? 'Uncategorized',
+                            amount: formattedDate,
+                            value: transaction['nilai'] != null
+                                ? 'Rp. ${NumberFormat.currency(locale: 'id', symbol: '', decimalDigits: 0).format(transaction['nilai'])}'
+                                : 'N/A',
+                            isIncome: transaction['jenis'] == 'pemasukan',
+                          ),
+                        ),
+                      ),
+                    ),
+                    if (index < transactions.length - 1) // Add divider if it's not the last item
+                      Divider(
+                        color: Colors.white.withOpacity(0.2),
+                        height: 1,
+                        thickness: 1,
+                      ),
+                  ],
+                );
+              }).toList(),
+            ),
+          )
+        else
+          Center(
+            child: Text(
+              'Tidak ada transaksi',
+              style: TextStyle(color: Colors.white, fontSize: 14),
+            ),
           ),
-          backgroundColor: WarnaSecondary,
-        ),
       ],
     );
   }
+}
 
-  Widget _buildActionButton({
-    required String label,
-    required IconData icon,
-    required Color color,
-    required VoidCallback onPressed,
-  }) {
+class ExpenseItem extends StatelessWidget {
+  final String title;
+  final String amount;
+  final String value;
+  final bool isIncome;
+
+  const ExpenseItem({
+    Key? key,
+    required this.title,
+    required this.amount,
+    required this.value,
+    required this.isIncome,
+  }) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
     return Row(
-      mainAxisSize: MainAxisSize.min,
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Container(
-          padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          decoration: BoxDecoration(
-            color: color.withOpacity(0.2),
-            borderRadius: BorderRadius.circular(20),
-          ),
-          child: Text(
-            label,
-            style: TextStyle(color: color, fontWeight: FontWeight.bold),
-          ),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(title, style: TextStyle(color: Colors.white, fontSize: 12)),
+            SizedBox(height: 4),
+            Text(amount,
+                style: TextStyle(
+                    color: Colors.white.withOpacity(0.5), fontSize: 12)),
+          ],
         ),
-        SizedBox(width: 10),
-        FloatingActionButton(
-          heroTag: label,
-          onPressed: onPressed,
-          child: Icon(icon, size: 24),
-          backgroundColor: color,
+        Text(
+          value,
+          style: TextStyle(
+            color: isIncome ? Colors.green : Color(0xFFFF2F2F),
+            fontSize: 12,
+          ),
         ),
       ],
     );
   }
 }
 
-class ChartData {
-  ChartData(this.category, this.value, this.color);
-  final String category;
-  final double value;
-  final Color color;
+class CustomBottomNavBar extends StatefulWidget {
+  @override
+  _CustomBottomNavBarState createState() => _CustomBottomNavBarState();
 }
 
-class Transaction {
-  final int id;
-  final double nilai;
-  final String kategori;
-  final String catatan;
-  final DateTime tanggal;
-  final String jenis;
-  final String userId;
-  final String? imageUrl;
+class _CustomBottomNavBarState extends State<CustomBottomNavBar> {
+  int _selectedIndex = 0;
 
-  Transaction({
-    required this.id,
-    required this.nilai,
-    required this.kategori,
-    required this.catatan,
-    required this.tanggal,
-    required this.jenis,
-    required this.userId,
-    this.imageUrl,
-  });
+  void _onItemTapped(int index) async {
+    if (index == 2) {
+      Navigator.push(context, MaterialPageRoute(builder: (context) => TaambahTransaksi()));
+    } else if (index == 4) { // Assuming 'Profil' is at index 4
+      try {
+        await Supabase.instance.client.auth.signOut();
+        Navigator.of(context).pushReplacementNamed('loginPage');
+      } catch (error) {
+        print('Error signing out: $error');
+      }
+    } else {
+      setState(() {
+        _selectedIndex = index;
+      });
+    }
+  }
 
-  factory Transaction.fromJson(Map<String, dynamic> json) {
-    return Transaction(
-      id: json['id'],
-      nilai: json['nilai'].toDouble(),
-      kategori: json['kategori'],
-      catatan: json['catatan'],
-      tanggal: DateTime.parse(json['tanggal']),
-      jenis: json['jenis'],
-      userId: json['user_id'],
-      imageUrl: json['image_url'] as String?,
+  @override
+  Widget build(BuildContext context) {
+    return BottomNavigationBar(
+      items: <BottomNavigationBarItem>[
+        BottomNavigationBarItem(
+          icon: Icon(Icons.home),
+          label: 'Beranda',
+        ),
+        BottomNavigationBarItem(
+          icon: Icon(Icons.history),
+          label: 'Transaksi',
+        ),
+        BottomNavigationBarItem(
+          icon: Icon(Icons.add_circle),
+          label: 'Tambah',
+        ),
+        BottomNavigationBarItem(
+          icon: Icon(Icons.account_balance_wallet),
+          label: 'Dompet',
+        ),
+        BottomNavigationBarItem(
+          icon: Icon(Icons.person),
+          label: 'Profil',
+        ),
+      ],
+      currentIndex: _selectedIndex,
+      selectedItemColor: Colors.white,
+      unselectedItemColor: Colors.grey.withOpacity(0.8),
+      onTap: _onItemTapped,
+      backgroundColor: Color(0xFF4E4062),
+      type: BottomNavigationBarType.fixed,
+      selectedFontSize: 12,
+      unselectedFontSize: 12,
     );
   }
 }

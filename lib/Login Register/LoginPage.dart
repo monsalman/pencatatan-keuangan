@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:pencatatan_keuangan/Page/HomePage.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import '../Page/HomePage.dart';
-import '../Page/HomePage2.dart';
 import '../main.dart';
+import 'RegisterPage.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({Key? key}) : super(key: key);
@@ -12,60 +12,73 @@ class LoginPage extends StatefulWidget {
 }
 
 class _LoginPageState extends State<LoginPage> {
-  final _kontrollerEmail = TextEditingController();
-  final _kontrollerKataSandi = TextEditingController();
-  bool _isPasswordVisible = false;
+  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
 
-  Future<void> _login() async {
+  @override
+  void dispose() {
+    _emailController.dispose();
+    _passwordController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _handleSignIn() async {
     try {
-      final respon = await Supabase.instance.client.auth.signInWithPassword(
-        email: _kontrollerEmail.text,
-        password: _kontrollerKataSandi.text,
+      final response = await Supabase.instance.client.auth.signInWithPassword(
+        email: _emailController.text,
+        password: _passwordController.text,
       );
-      if (respon.user != null) {
-        Navigator.push(context,MaterialPageRoute(builder: (context) => HomePage2()),);
+
+      if (response.user != null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Login berhasil!')),
+        );
+        // Navigate to the main page or dashboard
+        Navigator.push(context, MaterialPageRoute(builder: (context) => HomePage2()));
+      } else {
+        throw Exception('Login gagal');
       }
-    } catch (kesalahan) {
+    } catch (error) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Kesalahan: ${kesalahan.toString()}')),
+        SnackBar(content: Text('Error: ${error.toString()}')),
       );
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final mediaQuery = MediaQuery.of(context);
-    final screenHeight = mediaQuery.size.height;
-    final screenWidth = mediaQuery.size.width;
-    final isSmallScreen = screenWidth < 600;
-
     return Scaffold(
       backgroundColor: const Color(0xFF252B48),
       body: SafeArea(
-        child: SingleChildScrollView(
-          child: Container(
-            height: screenHeight,
-            padding: EdgeInsets.symmetric(
-              horizontal: screenWidth * 0.05,
-              vertical: screenHeight * 0.02,
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _buildBackButton(context),
-                SizedBox(height: screenHeight * 0.02),
-                _buildTitle(),
-                SizedBox(height: screenHeight * 0.05),
-                _buildInputField('Email'),
-                SizedBox(height: screenHeight * 0.02),
-                _buildInputField('Password', isPassword: true),
-                SizedBox(height: screenHeight * 0.05),
-                _buildRegisterButton(),
-                const Spacer(),
-                _buildLoginPrompt(context),
-              ],
-            ),
-          ),
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            return SingleChildScrollView(
+              child: ConstrainedBox(
+                constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                child: IntrinsicHeight(
+                  child: Padding(
+                    padding: const EdgeInsets.all(20.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _buildBackButton(context),
+                        const SizedBox(height: 20),
+                        _buildTitle(),
+                        const SizedBox(height: 20),
+                        _buildInputField('Email', _emailController),
+                        const SizedBox(height: 20),
+                        _buildInputField('Password', _passwordController, isPassword: true),
+                        const SizedBox(height: 40),
+                        _buildLoginButton(),
+                        const Spacer(),
+                        _buildRegisterPrompt(context),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            );
+          },
         ),
       ),
     );
@@ -94,10 +107,10 @@ class _LoginPageState extends State<LoginPage> {
     );
   }
 
-  Widget _buildInputField(String label, {bool isPassword = false}) {
+  Widget _buildInputField(String label, TextEditingController controller, {bool isPassword = false}) {
     return TextField(
-      controller: label == 'Email' ? _kontrollerEmail : _kontrollerKataSandi,
-      obscureText: isPassword && !_isPasswordVisible,
+      controller: controller,
+      obscureText: isPassword,
       style: const TextStyle(color: Colors.white),
       cursorColor: WarnaSecondary,
       decoration: InputDecoration(
@@ -114,37 +127,24 @@ class _LoginPageState extends State<LoginPage> {
         focusedBorder: const UnderlineInputBorder(
           borderSide: BorderSide(color: Color(0xFFEBF400)),
         ),
-        suffixIcon: isPassword
-            ? IconButton(
-                icon: Icon(
-                  _isPasswordVisible ? Icons.visibility : Icons.visibility_off,
-                  color: Colors.white,
-                ),
-                onPressed: () {
-                  setState(() {
-                    _isPasswordVisible = !_isPasswordVisible;
-                  });
-                },
-              )
-            : null,
       ),
     );
   }
 
-  Widget _buildRegisterButton() {
+  Widget _buildLoginButton() {
     return SizedBox(
       width: double.infinity,
       child: ElevatedButton(
-        onPressed: _login,
+        onPressed: _handleSignIn,
         style: ElevatedButton.styleFrom(
-          backgroundColor: WarnaSecondary,
-          foregroundColor: WarnaUtama,
-          padding: EdgeInsets.symmetric(vertical: MediaQuery.of(context).size.height * 0.02),
+          backgroundColor: const Color(0xFFEBF400),
+          foregroundColor: const Color(0xFF332941),
+          padding: const EdgeInsets.symmetric(vertical: 15),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(50),
           ),
         ),
-        child: Text(
+        child: const Text(
           'Masuk',
           style: TextStyle(
             fontSize: 18,
@@ -156,7 +156,7 @@ class _LoginPageState extends State<LoginPage> {
     );
   }
 
-  Widget _buildLoginPrompt(BuildContext context) {
+  Widget _buildRegisterPrompt(BuildContext context) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
@@ -171,7 +171,7 @@ class _LoginPageState extends State<LoginPage> {
         ),
         TextButton(
           onPressed: () {
-            Navigator.pushNamed(context, 'daftarPage');
+            Navigator.push(context, MaterialPageRoute(builder: (context) => RegisterPage()));
           },
           child: const Text(
             'Daftar',
@@ -185,12 +185,5 @@ class _LoginPageState extends State<LoginPage> {
         ),
       ],
     );
-  }
-
-  @override
-  void dispose() {
-    _kontrollerEmail.dispose();
-    _kontrollerKataSandi.dispose();
-    super.dispose();
   }
 }
