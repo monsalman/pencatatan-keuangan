@@ -8,6 +8,7 @@ import 'dart:math' as math;
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'DetailTransaksi.dart';
 import 'dart:async';
+import 'package:flutter/cupertino.dart';
 
 import 'TambahTransaksi.dart';
 
@@ -16,13 +17,16 @@ class HomePage extends StatefulWidget {
   _HomePageState createState() => _HomePageState();
 }
 
-class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin {
+class _HomePageState extends State<HomePage>
+    with SingleTickerProviderStateMixin {
   late AnimationController _refreshIconController;
-  final GlobalKey<RefreshIndicatorState> _refreshIndicatorKey = GlobalKey<RefreshIndicatorState>();
+  final GlobalKey<RefreshIndicatorState> _refreshIndicatorKey =
+      GlobalKey<RefreshIndicatorState>();
 
   // Add keys for child widgets that need refreshing
   final GlobalKey<_BalanceSectionState> _balanceSectionKey = GlobalKey();
-  final GlobalKey<_MonthlyReportSectionState> _monthlyReportSectionKey = GlobalKey();
+  final GlobalKey<_MonthlyReportSectionState> _monthlyReportSectionKey =
+      GlobalKey();
   final GlobalKey<_TransaksiState> _transaksiKey = GlobalKey();
 
   @override
@@ -47,7 +51,6 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
       await _balanceSectionKey.currentState?.fetchTotalBalance();
       await _monthlyReportSectionKey.currentState?.fetchMonthlyData();
       await _transaksiKey.currentState?.fetchTransactions();
-
     } catch (e) {
       print('Error refreshing data: $e');
     } finally {
@@ -198,7 +201,7 @@ class _BalanceSectionState extends State<BalanceSection> {
       });
     }
   }
-  
+
   Future<void> fetchTotalBalance() async {
     final user = supabase.auth.currentUser;
     if (user == null) return;
@@ -262,7 +265,9 @@ class _BalanceSectionState extends State<BalanceSection> {
             Row(
               children: [
                 Text(
-                  isBalanceVisible ? 'Rp. ${NumberFormat.currency(locale: 'id', symbol: '', decimalDigits: 0).format(totalBalance)}' : 'Rp. ***.***',
+                  isBalanceVisible
+                      ? 'Rp. ${NumberFormat.currency(locale: 'id', symbol: '', decimalDigits: 0).format(totalBalance)}'
+                      : 'Rp. ***.***',
                   style: TextStyle(
                       color: Colors.white,
                       fontSize: 20,
@@ -272,7 +277,9 @@ class _BalanceSectionState extends State<BalanceSection> {
                 GestureDetector(
                   onTap: toggleBalanceVisibility,
                   child: Icon(
-                    isBalanceVisible ? Icons.remove_red_eye : Icons.visibility_off,
+                    isBalanceVisible
+                        ? Icons.remove_red_eye
+                        : Icons.visibility_off,
                     color: Colors.white,
                     size: 16,
                   ),
@@ -458,7 +465,9 @@ class _MonthlyReportSectionState extends State<MonthlyReportSection> {
                         style: TextStyle(color: Colors.grey, fontSize: 14),
                       ),
                       Text(
-                        NumberFormat.currency(locale: 'id', symbol: 'Rp ', decimalDigits: 0).format(totalPengeluaran),
+                        NumberFormat.currency(
+                                locale: 'id', symbol: 'Rp. ', decimalDigits: 0)
+                            .format(totalPengeluaran),
                         style: TextStyle(
                             color: Colors.red,
                             fontSize: 16,
@@ -474,7 +483,9 @@ class _MonthlyReportSectionState extends State<MonthlyReportSection> {
                         style: TextStyle(color: Colors.grey, fontSize: 14),
                       ),
                       Text(
-                        NumberFormat.currency(locale: 'id', symbol: 'Rp ', decimalDigits: 0).format(totalPemasukan),
+                        NumberFormat.currency(
+                                locale: 'id', symbol: 'Rp. ', decimalDigits: 0)
+                            .format(totalPemasukan),
                         style: TextStyle(
                             color: Colors.green,
                             fontSize: 16,
@@ -499,21 +510,29 @@ class _MonthlyReportSectionState extends State<MonthlyReportSection> {
                           interval: 5,
                           getTitlesWidget: (value, meta) {
                             if (value % 5 == 0) {
-                              final date = DateTime(DateTime.now().year, DateTime.now().month, value.toInt());
+                              final date = DateTime(DateTime.now().year,
+                                  DateTime.now().month, value.toInt());
                             }
                             return Text('');
                           },
                         ),
                       ),
-                      leftTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                      topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                      rightTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                      leftTitles:
+                          AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                      topTitles:
+                          AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                      rightTitles:
+                          AxisTitles(sideTitles: SideTitles(showTitles: false)),
                     ),
                     borderData: FlBorderData(show: false),
                     minX: 1,
                     maxX: 31,
-                    minY: chartData.isEmpty ? 0 : chartData.map((spot) => spot.y).reduce(math.min),
-                    maxY: chartData.isEmpty ? 30000 : chartData.map((spot) => spot.y).reduce(math.max),
+                    minY: chartData.isEmpty
+                        ? 0
+                        : chartData.map((spot) => spot.y).reduce(math.min),
+                    maxY: chartData.isEmpty
+                        ? 30000
+                        : chartData.map((spot) => spot.y).reduce(math.max),
                     lineBarsData: [
                       LineChartBarData(
                         spots: chartData,
@@ -535,7 +554,8 @@ class _MonthlyReportSectionState extends State<MonthlyReportSection> {
                         getTooltipItems: (List<LineBarSpot> touchedBarSpots) {
                           return touchedBarSpots.map((barSpot) {
                             final flSpot = barSpot;
-                            final date = DateTime(DateTime.now().year, DateTime.now().month, flSpot.x.toInt());
+                            final date = DateTime(DateTime.now().year,
+                                DateTime.now().month, flSpot.x.toInt());
                             return LineTooltipItem(
                               '${NumberFormat.currency(locale: 'id', symbol: 'Rp ', decimalDigits: 0).format(flSpot.y)}',
                               TextStyle(
@@ -544,7 +564,8 @@ class _MonthlyReportSectionState extends State<MonthlyReportSection> {
                               ),
                               children: [
                                 TextSpan(
-                                  text: '\n${DateFormat("dd - MMM", 'id_ID').format(date)}',
+                                  text:
+                                      '\n${DateFormat("dd - MMM", 'id_ID').format(date)}',
                                   style: TextStyle(
                                     color: Colors.white,
                                     fontWeight: FontWeight.normal,
@@ -700,13 +721,16 @@ class _TransaksiState extends State<Transaksi> {
     }
   }
 
-  void _navigateToDetailTransaksi(BuildContext context, Map<String, dynamic> transactionData) {
+  void _navigateToDetailTransaksi(
+      BuildContext context, Map<String, dynamic> transactionData) {
     final transaction = Transaction(
       id: transactionData['id'],
       kategori: transactionData['kategori'] ?? 'Uncategorized',
       nilai: transactionData['nilai'] ?? 0,
       jenis: transactionData['jenis'] ?? '',
-      tanggal: transactionData['tanggal'] != null ? DateTime.parse(transactionData['tanggal']) : DateTime.now(),
+      tanggal: transactionData['tanggal'] != null
+          ? DateTime.parse(transactionData['tanggal'])
+          : DateTime.now(),
       catatan: transactionData['catatan'] ?? '',
       imageUrl: transactionData['image_url'],
     );
@@ -760,13 +784,15 @@ class _TransaksiState extends State<Transaksi> {
                 String formattedDate = 'No date';
                 if (transaction['tanggal'] != null) {
                   DateTime date = DateTime.parse(transaction['tanggal']);
-                  formattedDate = DateFormat('dd MMM yyyy', 'id_ID').format(date);
+                  formattedDate =
+                      DateFormat('dd MMM yyyy', 'id_ID').format(date);
                 }
-              
+                bool isIncome = transaction['jenis'] == 'pemasukan';
                 return Column(
                   children: [
                     GestureDetector(
-                      onTap: () => _navigateToDetailTransaksi(context, transaction),
+                      onTap: () =>
+                          _navigateToDetailTransaksi(context, transaction),
                       child: Container(
                         decoration: BoxDecoration(
                           color: Color(0xFF2F253D),
@@ -780,12 +806,12 @@ class _TransaksiState extends State<Transaksi> {
                             value: transaction['nilai'] != null
                                 ? 'Rp. ${NumberFormat.currency(locale: 'id', symbol: '', decimalDigits: 0).format(transaction['nilai'])}'
                                 : 'N/A',
-                            isIncome: transaction['jenis'] == 'pemasukan',
+                            isIncome: isIncome,
                           ),
                         ),
                       ),
                     ),
-                    if (index < transactions.length - 1) // Add divider if it's not the last item
+                    if (index < transactions.length - 1)
                       Divider(
                         color: Colors.white.withOpacity(0.2),
                         height: 1,
@@ -825,17 +851,26 @@ class ExpenseItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(title, style: TextStyle(color: Colors.white, fontSize: 12)),
-            SizedBox(height: 4),
-            Text(amount,
-                style: TextStyle(
-                    color: Colors.white.withOpacity(0.5), fontSize: 12)),
-          ],
+        Icon(
+          isIncome
+              ? CupertinoIcons.arrow_up_right
+              : CupertinoIcons.arrow_down_right,
+          color: isIncome ? Colors.green : Color(0xFFFF2F2F),
+          size: 25,
+        ),
+        SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(title, style: TextStyle(color: Colors.white, fontSize: 12)),
+              SizedBox(height: 4),
+              Text(amount,
+                  style: TextStyle(
+                      color: Colors.white.withOpacity(0.5), fontSize: 12)),
+            ],
+          ),
         ),
         Text(
           value,
@@ -852,7 +887,8 @@ class ExpenseItem extends StatelessWidget {
 class CustomBottomNavBar extends StatefulWidget {
   final VoidCallback onTambahPressed;
 
-  const CustomBottomNavBar({Key? key, required this.onTambahPressed}) : super(key: key);
+  const CustomBottomNavBar({Key? key, required this.onTambahPressed})
+      : super(key: key);
 
   @override
   _CustomBottomNavBarState createState() => _CustomBottomNavBarState();
