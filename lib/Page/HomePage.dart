@@ -23,7 +23,6 @@ class _HomePageState extends State<HomePage>
   final GlobalKey<RefreshIndicatorState> _refreshIndicatorKey =
       GlobalKey<RefreshIndicatorState>();
 
-  // Add keys for child widgets that need refreshing
   final GlobalKey<_BalanceSectionState> _balanceSectionKey = GlobalKey();
   final GlobalKey<_MonthlyReportSectionState> _monthlyReportSectionKey =
       GlobalKey();
