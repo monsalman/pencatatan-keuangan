@@ -15,6 +15,7 @@ class _LoginPageState extends State<LoginPage> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _obscurePassword = true;
+  bool _isLoading = false;
 
   @override
   void dispose() {
@@ -24,6 +25,10 @@ class _LoginPageState extends State<LoginPage> {
   }
 
   Future<void> _handleSignIn() async {
+    if (_isLoading) return;
+    setState(() {
+      _isLoading = true;
+    });
     try {
       final response = await Supabase.instance.client.auth.signInWithPassword(
         email: _emailController.text,
@@ -32,7 +37,14 @@ class _LoginPageState extends State<LoginPage> {
 
       if (response.user != null) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Login berhasil!')),
+          SnackBar(
+            content: Text(
+              'Login berhasil!',
+              style: TextStyle(color: WarnaUtama),
+            ),
+            backgroundColor: WarnaSecondary,
+            behavior: SnackBarBehavior.floating,
+          ),
         );
         Navigator.push(context, MaterialPageRoute(builder: (context) => HomePage()));
       } else {
@@ -40,8 +52,16 @@ class _LoginPageState extends State<LoginPage> {
       }
     } catch (error) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error: ${error.toString()}')),
+        SnackBar(
+          content: Text('Error: ${error.toString()}'),
+          backgroundColor: Colors.red,
+          behavior: SnackBarBehavior.floating,
+        ),
       );
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
     }
   }
 
@@ -148,23 +168,32 @@ class _LoginPageState extends State<LoginPage> {
     return SizedBox(
       width: double.infinity,
       child: ElevatedButton(
-        onPressed: _handleSignIn,
+        onPressed: _isLoading ? null : _handleSignIn,
         style: ElevatedButton.styleFrom(
           backgroundColor: const Color(0xFFEBF400),
-          foregroundColor: const Color(0xFF332941),
+          foregroundColor: WarnaUtama,
           padding: const EdgeInsets.symmetric(vertical: 15),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(50),
           ),
         ),
-        child: const Text(
-          'Masuk',
-          style: TextStyle(
-            fontSize: 18,
-            fontFamily: 'Inter',
-            fontWeight: FontWeight.w600,
-          ),
-        ),
+        child: _isLoading
+            ? SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  valueColor: AlwaysStoppedAnimation<Color>(WarnaUtama),
+                ),
+              )
+            : const Text(
+                'Masuk',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontFamily: 'Inter',
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
       ),
     );
   }

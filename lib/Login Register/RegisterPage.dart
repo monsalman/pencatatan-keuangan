@@ -15,6 +15,7 @@ class _RegisterPageState extends State<RegisterPage> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _obscurePassword = true;
+  bool _isLoading = false;
 
   @override
   void dispose() {
@@ -84,32 +85,11 @@ class _RegisterPageState extends State<RegisterPage> {
     );
   }
 
-  Widget _buildRegisterButton() {
-    return SizedBox(
-      width: double.infinity,
-      child: ElevatedButton(
-        onPressed: _handleSignUp,
-        style: ElevatedButton.styleFrom(
-          backgroundColor: const Color(0xFFEBF400),
-          foregroundColor: const Color(0xFF332941),
-          padding: const EdgeInsets.symmetric(vertical: 15),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(50),
-          ),
-        ),
-        child: const Text(
-          'Daftar',
-          style: TextStyle(
-            fontSize: 18,
-            fontFamily: 'Inter',
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-      ),
-    );
-  }
-
   Future<void> _handleSignUp() async {
+    if (_isLoading) return;
+    setState(() {
+      _isLoading = true;
+    });
     try {
       final AuthResponse response = await Supabase.instance.client.auth.signUp(
         email: _emailController.text,
@@ -118,7 +98,6 @@ class _RegisterPageState extends State<RegisterPage> {
       );
 
       if (response.user != null) {
-        // Update the user's metadata with the display name
         await Supabase.instance.client.auth.updateUser(
           UserAttributes(
             data: {'display_name': _displayNameController.text},
@@ -126,7 +105,14 @@ class _RegisterPageState extends State<RegisterPage> {
         );
 
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Pendaftaran berhasil! Silakan login kembali.')),
+          SnackBar(
+            content: Text(
+              'Login berhasil!',
+              style: TextStyle(color: WarnaUtama),
+            ),
+            backgroundColor: WarnaSecondary,
+            behavior: SnackBarBehavior.floating,
+          ),
         );
         Navigator.push(context, MaterialPageRoute(builder: (context) => LoginPage()));
       } else {
@@ -134,9 +120,51 @@ class _RegisterPageState extends State<RegisterPage> {
       }
     } catch (error) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error: ${error.toString()}')),
+        SnackBar(
+          content: Text('Error: ${error.toString()}'),
+          backgroundColor: Colors.red,
+          behavior: SnackBarBehavior.floating,
+        ),
       );
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
     }
+  }
+
+  Widget _buildRegisterButton() {
+    return SizedBox(
+      width: double.infinity,
+      child: ElevatedButton(
+        onPressed: _isLoading ? null : _handleSignUp,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: const Color(0xFFEBF400),
+          foregroundColor: WarnaUtama,
+          padding: const EdgeInsets.symmetric(vertical: 15),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(50),
+          ),
+        ),
+        child: _isLoading
+            ? SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  valueColor: AlwaysStoppedAnimation<Color>(WarnaUtama),
+                ),
+              )
+            : const Text(
+                'Daftar',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontFamily: 'Inter',
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+      ),
+    );
   }
 
   Widget _buildLoginPrompt(BuildContext context) {
