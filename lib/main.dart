@@ -17,7 +17,7 @@ Future<void> main() async {
   await MobileAds.instance.initialize();
   final notificationService = NotificationService();
   await notificationService.init();
-  await notificationService.scheduleDailyReminder();
+  await notificationService.showDailyReminder();
 
   await Supabase.initialize(
     url: 'https://wzvuymvcmzamnjltsipi.supabase.co',

@@ -9,6 +9,7 @@ import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'DetailTransaksi.dart';
 import 'dart:async';
 import 'package:flutter/cupertino.dart';
+import 'dart:io' show Platform;
 
 import 'TambahTransaksi.dart';
 
@@ -132,9 +133,13 @@ class _AdBannerSectionState extends State<AdBannerSection> {
   }
 
   void _loadAd() {
+    final adUnitId = Platform.isAndroid
+        // ?'ca-app-pub-3940256099942544/6300978111'
+        ? 'ca-app-pub-3564069642095127/5462088626'
+        : 'ca-app-pub-3564069642095127/9209761947';
+
     _bannerAd = BannerAd(
-      // adUnitId: 'ca-app-pub-3940256099942544/6300978111',
-      adUnitId: 'ca-app-pub-8154228414998679/8359172131',
+      adUnitId: adUnitId,
       size: AdSize.banner,
       request: AdRequest(),
       listener: BannerAdListener(

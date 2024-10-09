@@ -53,7 +53,7 @@
 	
 	<!-- Add these new entries for AdMob -->
 	<key>GADApplicationIdentifier</key>
-	<string>ca-app-pub-8154228414998679~9026855151</string>
+	<string>ca-app-pub-3564069642095127~1694966525</string>
 	<key>SKAdNetworkItems</key>
 	<array>
 		<dict>
