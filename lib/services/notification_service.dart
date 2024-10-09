@@ -1,7 +1,6 @@
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/data/latest.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
-import 'dart:async';
 
 class NotificationService {
   static final NotificationService _notificationService = NotificationService._internal();
@@ -24,18 +23,11 @@ class NotificationService {
       requestAlertPermission: false,
     );
 
-    final LinuxInitializationSettings initializationSettingsLinux =
-        LinuxInitializationSettings(
-      defaultActionName: 'Open notification',
-      defaultIcon: AssetsLinuxIcon('assets/launcher.png'),
-    );
-
     final InitializationSettings initializationSettings =
         InitializationSettings(
             android: initializationSettingsAndroid,
             iOS: initializationSettingsIOS,
-            macOS: null,
-            linux: initializationSettingsLinux);
+            macOS: null);
 
     await flutterLocalNotificationsPlugin.initialize(initializationSettings);
 
@@ -44,7 +36,7 @@ class NotificationService {
     tz.setLocalLocation(jakarta);
   }
 
-  Future<void> scheduleDailyReminder() async {
+  Future<void> showDailyReminder() async {
     await flutterLocalNotificationsPlugin.zonedSchedule(
       1,
       'Pengingat Keuangan',
@@ -58,9 +50,6 @@ class NotificationService {
           priority: Priority.high,
         ),
         iOS: DarwinNotificationDetails(),
-        linux: LinuxNotificationDetails(
-          icon: AssetsLinuxIcon('assets/launcher.png'),
-        ),
       ),
       androidAllowWhileIdle: true,
       uiLocalNotificationDateInterpretation:
@@ -86,9 +75,6 @@ class NotificationService {
           priority: Priority.high,
         ),
         iOS: DarwinNotificationDetails(),
-        linux: LinuxNotificationDetails(
-          icon: AssetsLinuxIcon('assets/launcher.png'),
-        ),
       ),
     );
   }
