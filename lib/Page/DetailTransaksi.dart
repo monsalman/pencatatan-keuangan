@@ -122,7 +122,7 @@ class DetailTransaksi extends StatelessWidget {
                             color: Colors.white,
                           ),
                         ),
-                        SizedBox(height: 10),
+                        SizedBox(height: 15),
                         _buildImageWidget(transaction.imageUrl!),
                         SizedBox(height: 35),
                       ],
