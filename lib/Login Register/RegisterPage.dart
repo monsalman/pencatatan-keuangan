@@ -14,6 +14,7 @@ class _RegisterPageState extends State<RegisterPage> {
   final _displayNameController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+  bool _obscurePassword = true;
 
   @override
   void dispose() {
@@ -49,7 +50,7 @@ class _RegisterPageState extends State<RegisterPage> {
   Widget _buildInputField(String label, TextEditingController controller, {bool isPassword = false}) {
     return TextField(
       controller: controller,
-      obscureText: isPassword,
+      obscureText: isPassword ? _obscurePassword : false,
       style: const TextStyle(color: Colors.white),
       cursorColor: WarnaSecondary,
       decoration: InputDecoration(
@@ -66,6 +67,19 @@ class _RegisterPageState extends State<RegisterPage> {
         focusedBorder: const UnderlineInputBorder(
           borderSide: BorderSide(color: Color(0xFFEBF400)),
         ),
+        suffixIcon: isPassword
+            ? IconButton(
+                icon: Icon(
+                  _obscurePassword ? Icons.visibility_off : Icons.visibility,
+                  color: Colors.white,
+                ),
+                onPressed: () {
+                  setState(() {
+                    _obscurePassword = !_obscurePassword;
+                  });
+                },
+              )
+            : null,
       ),
     );
   }

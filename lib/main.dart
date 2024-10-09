@@ -14,16 +14,14 @@ final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
   await MobileAds.instance.initialize();
-
   final notificationService = NotificationService();
   await notificationService.init();
   await notificationService.showDailyReminder();
 
   await Supabase.initialize(
-    url: 'https://fuhrwueadogwbuwajytq.supabase.co',
-    anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ1aHJ3dWVhZG9nd2J1d2FqeXRxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Mjg0MDY2MjgsImV4cCI6MjA0Mzk4MjYyOH0.rw1Sk3ugSGkmLONgjU0imqPuEbtm0vdMipe50dguNzo',
+    url: 'https://wzvuymvcmzamnjltsipi.supabase.co',
+    anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind6dnV5bXZjbXphbW5qbHRzaXBpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Mjg0NTk5NjQsImV4cCI6MjA0NDAzNTk2NH0.OQrP0BluxleoHK0dv2JqdAhCiVIHU1BqeSKVaQbalOY',
   );
 
   runApp(const MyApp());
