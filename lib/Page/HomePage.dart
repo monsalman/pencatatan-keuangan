@@ -205,7 +205,7 @@ class _BalanceSectionState extends State<BalanceSection> {
         Row(
           children: [
             Text(
-              isBalanceVisible ? 'Rp. ${NumberFormat.currency(locale: 'id', symbol: '', decimalDigits: 0).format(totalBalance)}' : 'Rp. ******',
+              isBalanceVisible ? 'Rp. ${NumberFormat.currency(locale: 'id', symbol: '', decimalDigits: 0).format(totalBalance)}' : 'Rp. ***.***',
               style: TextStyle(
                   color: Colors.white,
                   fontSize: 20,
