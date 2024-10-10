@@ -1,185 +1,42 @@
-import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
+import 'package:flutter/material.dart';
 import 'package:pencatatan_keuangan/main.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:intl/intl.dart';
 import 'package:intl/date_symbol_data_local.dart';
-import 'dart:math' as math;
-import 'package:google_mobile_ads/google_mobile_ads.dart';
-import 'DetailTransaksi.dart';
-import 'dart:async';
-import 'package:flutter/cupertino.dart';
-import 'dart:io' show Platform;
 
-import 'TambahTransaksi.dart';
-
-class HomePage extends StatefulWidget {
-  @override
-  _HomePageState createState() => _HomePageState();
-}
-
-class _HomePageState extends State<HomePage>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _refreshIconController;
-  final GlobalKey<RefreshIndicatorState> _refreshIndicatorKey =
-      GlobalKey<RefreshIndicatorState>();
-
-  final GlobalKey<_BalanceSectionState> _balanceSectionKey = GlobalKey();
-  final GlobalKey<_MonthlyReportSectionState> _monthlyReportSectionKey =
-      GlobalKey();
-  final GlobalKey<_TransaksiState> _transaksiKey = GlobalKey();
-
-  @override
-  void initState() {
-    super.initState();
-    _refreshIconController = AnimationController(
-      vsync: this,
-      duration: Duration(seconds: 1),
-    );
-  }
-
-  @override
-  void dispose() {
-    _refreshIconController.dispose();
-    super.dispose();
-  }
-
-  Future<void> _handleRefresh() async {
-    _refreshIconController.repeat();
-
-    try {
-      await _balanceSectionKey.currentState?.fetchTotalBalance();
-      await _monthlyReportSectionKey.currentState?.fetchMonthlyData();
-      await _transaksiKey.currentState?.fetchTransactions();
-    } catch (e) {
-      print('Error refreshing data: $e');
-    } finally {
-      _refreshIconController.stop();
-      _refreshIconController.reset();
-    }
-  }
-
+class HomePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Color(0xFF252B48),
-      body: RefreshIndicator(
-        key: _refreshIndicatorKey,
-        onRefresh: _handleRefresh,
-        backgroundColor: Colors.white,
-        color: Color(0xFF252B48),
-        strokeWidth: 3,
-        displacement: 40,
-        edgeOffset: 20,
-        child: CustomScrollView(
-          physics: AlwaysScrollableScrollPhysics(),
-          slivers: [
-            SliverToBoxAdapter(
-              child: SafeArea(
-                child: SingleChildScrollView(
-                  child: Padding(
-                    padding: EdgeInsets.all(16.0),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        AdBannerSection(),
-                        SizedBox(height: 20),
-                        BalanceSection(key: _balanceSectionKey),
-                        SizedBox(height: 20),
-                        WalletSection(),
-                        SizedBox(height: 20),
-                        MonthlyReportSection(key: _monthlyReportSectionKey),
-                        SizedBox(height: 20),
-                        Pengeluaran(),
-                        SizedBox(height: 20),
-                        Transaksi(key: _transaksiKey),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
+      body: SafeArea(
+        child: SingleChildScrollView(
+          child: Padding(
+            padding: EdgeInsets.all(16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                BalanceSection(),
+                SizedBox(height: 20),
+                WalletSection(),
+                SizedBox(height: 20),
+                MonthlyReportSection(),
+                SizedBox(height: 20),
+                Pengeluaran(),
+                SizedBox(height: 20),
+                Transaksi(),
+              ],
             ),
-          ],
+          ),
         ),
       ),
-      bottomNavigationBar: CustomBottomNavBar(
-        onTambahPressed: () async {
-          final result = await Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => TaambahTransaksi()),
-          );
-          if (result == true) {
-            _handleRefresh();
-          }
-        },
-      ),
+      bottomNavigationBar: PersistentBottomNavBar(),
     );
-  }
-}
-
-class AdBannerSection extends StatefulWidget {
-  @override
-  _AdBannerSectionState createState() => _AdBannerSectionState();
-}
-
-class _AdBannerSectionState extends State<AdBannerSection> {
-  BannerAd? _bannerAd;
-  bool _isAdLoaded = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _loadAd();
-  }
-
-  void _loadAd() {
-    final adUnitId = Platform.isAndroid
-        // ?'ca-app-pub-3940256099942544/6300978111'
-        ? 'ca-app-pub-3564069642095127/5462088626'
-        : 'ca-app-pub-3564069642095127/9209761947';
-
-    _bannerAd = BannerAd(
-      adUnitId: adUnitId,
-      size: AdSize.banner,
-      request: AdRequest(),
-      listener: BannerAdListener(
-        onAdLoaded: (ad) {
-          setState(() {
-            _isAdLoaded = true;
-          });
-        },
-        onAdFailedToLoad: (ad, error) {
-          ad.dispose();
-          print('Ad failed to load: $error');
-        },
-      ),
-    );
-
-    _bannerAd?.load();
-  }
-
-  @override
-  void dispose() {
-    _bannerAd?.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    if (_isAdLoaded) {
-      return Container(
-        height: 50,
-        child: AdWidget(ad: _bannerAd!),
-      );
-    } else {
-      return SizedBox(height: 0);
-    }
   }
 }
 
 class BalanceSection extends StatefulWidget {
-  const BalanceSection({Key? key}) : super(key: key);
-
   @override
   _BalanceSectionState createState() => _BalanceSectionState();
 }
@@ -188,22 +45,11 @@ class _BalanceSectionState extends State<BalanceSection> {
   final supabase = Supabase.instance.client;
   double totalBalance = 0;
   bool isBalanceVisible = true;
-  String _username = '';
 
   @override
   void initState() {
     super.initState();
-    _getUserInfo();
     fetchTotalBalance();
-  }
-
-  Future<void> _getUserInfo() async {
-    final user = supabase.auth.currentUser;
-    if (user != null) {
-      setState(() {
-        _username = user.userMetadata?['display_name'] ?? '';
-      });
-    }
   }
 
   Future<void> fetchTotalBalance() async {
@@ -243,56 +89,52 @@ class _BalanceSectionState extends State<BalanceSection> {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text(
-              'Selamat datang, $_username',
+              'Hi, Username',
               style: TextStyle(
                 color: Colors.white,
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
+                fontSize: 22,
+                fontWeight: FontWeight.w700,
               ),
             ),
-            SizedBox(height: 4),
+            Icon(Icons.notifications, color: Colors.white, size: 24),
+          ],
+        ),
+        SizedBox(height: 12),
+        Text(
+          'Jumlah Saldo',
+          style: TextStyle(
+              color: Color(0xFF8E7AA9),
+              fontSize: 13,
+              fontWeight: FontWeight.w500),
+        ),
+        SizedBox(height: 4),
+        Row(
+          children: [
             Text(
-              'Jumlah Saldo',
+              isBalanceVisible ? 'Rp. ${NumberFormat.currency(locale: 'id', symbol: '', decimalDigits: 0).format(totalBalance)}' : 'Rp. ******',
               style: TextStyle(
-                  color: Color(0xFF8E7AA9),
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500),
+                  color: Colors.white,
+                  fontSize: 20,
+                  fontWeight: FontWeight.w600),
             ),
-            SizedBox(height: 4),
-            Row(
-              children: [
-                Text(
-                  isBalanceVisible
-                      ? 'Rp. ${NumberFormat.currency(locale: 'id', symbol: '', decimalDigits: 0).format(totalBalance)}'
-                      : 'Rp. ***.***',
-                  style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 20,
-                      fontWeight: FontWeight.w600),
-                ),
-                SizedBox(width: 8),
-                GestureDetector(
-                  onTap: toggleBalanceVisibility,
-                  child: Icon(
-                    isBalanceVisible
-                        ? Icons.remove_red_eye
-                        : Icons.visibility_off,
-                    color: Colors.white,
-                    size: 16,
-                  ),
-                ),
-              ],
+            SizedBox(width: 8),
+            GestureDetector(
+              onTap: toggleBalanceVisibility,
+              child: Icon(
+                isBalanceVisible ? Icons.remove_red_eye : Icons.visibility_off,
+                color: Colors.white,
+                size: 16,
+              ),
             ),
           ],
         ),
-        Icon(Icons.notifications, color: Colors.white, size: 24),
       ],
     );
   }
@@ -350,8 +192,6 @@ class WalletItem extends StatelessWidget {
 }
 
 class MonthlyReportSection extends StatefulWidget {
-  const MonthlyReportSection({Key? key}) : super(key: key);
-
   @override
   _MonthlyReportSectionState createState() => _MonthlyReportSectionState();
 }
@@ -469,9 +309,7 @@ class _MonthlyReportSectionState extends State<MonthlyReportSection> {
                         style: TextStyle(color: Colors.grey, fontSize: 14),
                       ),
                       Text(
-                        NumberFormat.currency(
-                                locale: 'id', symbol: 'Rp. ', decimalDigits: 0)
-                            .format(totalPengeluaran),
+                        NumberFormat.currency(locale: 'id', symbol: 'Rp ', decimalDigits: 0).format(totalPengeluaran),
                         style: TextStyle(
                             color: Colors.red,
                             fontSize: 16,
@@ -487,11 +325,9 @@ class _MonthlyReportSectionState extends State<MonthlyReportSection> {
                         style: TextStyle(color: Colors.grey, fontSize: 14),
                       ),
                       Text(
-                        NumberFormat.currency(
-                                locale: 'id', symbol: 'Rp. ', decimalDigits: 0)
-                            .format(totalPemasukan),
+                        NumberFormat.currency(locale: 'id', symbol: 'Rp ', decimalDigits: 0).format(totalPemasukan),
                         style: TextStyle(
-                            color: Colors.green,
+                            color: Colors.blue,
                             fontSize: 16,
                             fontWeight: FontWeight.w700),
                       ),
@@ -511,72 +347,88 @@ class _MonthlyReportSectionState extends State<MonthlyReportSection> {
                         sideTitles: SideTitles(
                           showTitles: true,
                           reservedSize: 22,
-                          interval: 5,
                           getTitlesWidget: (value, meta) {
-                            if (value % 5 == 0) {
-                              final date = DateTime(DateTime.now().year,
-                                  DateTime.now().month, value.toInt());
+                            const titles = [];
+                            final index = value.toInt();
+                            if (index >= 0 && index < titles.length) {
+                              return Text(
+                                titles[index],
+                                style: TextStyle(
+                                  color: Colors.grey,
+                                  fontSize: 10,
+                                ),
+                              );
                             }
                             return Text('');
                           },
                         ),
                       ),
-                      leftTitles:
-                          AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                      topTitles:
-                          AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                      rightTitles:
-                          AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                      leftTitles: AxisTitles(
+                        sideTitles: SideTitles(
+                          showTitles: true,
+                          reservedSize: 30,
+                          interval: 1,
+                          getTitlesWidget: (value, meta) {
+                            return Text(
+                              '${value.toInt()}M',
+                              style: TextStyle(
+                                color: Colors.grey,
+                                fontSize: 10,
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                      topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                      rightTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
                     ),
                     borderData: FlBorderData(show: false),
-                    minX: 1,
-                    maxX: 31,
-                    minY: chartData.isEmpty
-                        ? 0
-                        : chartData.map((spot) => spot.y).reduce(math.min),
-                    maxY: chartData.isEmpty
-                        ? 30000
-                        : chartData.map((spot) => spot.y).reduce(math.max),
+                    minX: 0,
+                    maxX: 2,
+                    minY: 0,
+                    maxY: 5,
                     lineBarsData: [
                       LineChartBarData(
-                        spots: chartData,
+                        spots: [
+                          FlSpot(0, 1.5),
+                          FlSpot(1, 3),
+                          FlSpot(2, 2),
+                        ],
                         isCurved: true,
-                        color: Colors.green,
+                        color: Colors.blue,
                         barWidth: 3,
                         isStrokeCapRound: true,
                         dotData: FlDotData(show: false),
-                        belowBarData: BarAreaData(
-                          show: true,
-                          color: Colors.green.withOpacity(0.2),
-                        ),
+                        belowBarData: BarAreaData(show: false),
+                      ),
+                      LineChartBarData(
+                        spots: [
+                          FlSpot(0, 2),
+                          FlSpot(1, 1.5),
+                          FlSpot(2, 4),
+                        ],
+                        isCurved: true,
+                        color: Colors.red,
+                        barWidth: 3,
+                        isStrokeCapRound: true,
+                        dotData: FlDotData(show: false),
+                        belowBarData: BarAreaData(show: false),
                       ),
                     ],
                     lineTouchData: LineTouchData(
                       enabled: true,
                       touchTooltipData: LineTouchTooltipData(
+                        getTooltipColor: (touchedSpot) => Colors.white,
                         tooltipRoundedRadius: 8,
                         getTooltipItems: (List<LineBarSpot> touchedBarSpots) {
                           return touchedBarSpots.map((barSpot) {
                             final flSpot = barSpot;
-                            final date = DateTime(DateTime.now().year,
-                                DateTime.now().month, flSpot.x.toInt());
                             return LineTooltipItem(
-                              '${NumberFormat.currency(locale: 'id', symbol: 'Rp ', decimalDigits: 0).format(flSpot.y)}',
+                              '${flSpot.y}m',
                               TextStyle(
-                                color: Colors.white,
+                                color: barSpot.bar.color,
                                 fontWeight: FontWeight.bold,
                               ),
-                              children: [
-                                TextSpan(
-                                  text:
-                                      '\n${DateFormat("dd - MMM", 'id_ID').format(date)}',
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.normal,
-                                    fontSize: 12,
-                                  ),
-                                ),
-                              ],
                             );
                           }).toList();
                         },
@@ -690,8 +542,6 @@ class ToggleButtons extends StatelessWidget {
 }
 
 class Transaksi extends StatefulWidget {
-  const Transaksi({Key? key}) : super(key: key);
-
   @override
   _TransaksiState createState() => _TransaksiState();
 }
@@ -715,7 +565,7 @@ class _TransaksiState extends State<Transaksi> {
           .from('transaksi')
           .select()
           .eq('user_id', user.id)
-          .order('tanggal', ascending: false);
+          .order('tanggal', ascending: false); // Urutkan berdasarkan tanggal terbaru
 
       setState(() {
         transactions = List<Map<String, dynamic>>.from(response);
@@ -723,28 +573,6 @@ class _TransaksiState extends State<Transaksi> {
     } catch (error) {
       print('Error fetching transactions: $error');
     }
-  }
-
-  void _navigateToDetailTransaksi(
-      BuildContext context, Map<String, dynamic> transactionData) {
-    final transaction = Transaction(
-      id: transactionData['id'],
-      kategori: transactionData['kategori'] ?? 'Uncategorized',
-      nilai: transactionData['nilai'] ?? 0,
-      jenis: transactionData['jenis'] ?? '',
-      tanggal: transactionData['tanggal'] != null
-          ? DateTime.parse(transactionData['tanggal'])
-          : DateTime.now(),
-      catatan: transactionData['catatan'] ?? '',
-      imageUrl: transactionData['image_url'],
-    );
-
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => DetailTransaksi(transaction: transaction),
-      ),
-    );
   }
 
   @override
@@ -774,65 +602,37 @@ class _TransaksiState extends State<Transaksi> {
           ],
         ),
         SizedBox(height: 8),
-        if (transactions.isNotEmpty)
-          Container(
-            padding: EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Color(0xFF2F253D),
-              borderRadius: BorderRadius.circular(15),
-            ),
-            child: Column(
-              children: transactions.asMap().entries.map((entry) {
-                int index = entry.key;
-                var transaction = entry.value;
-                String formattedDate = 'No date';
-                if (transaction['tanggal'] != null) {
-                  DateTime date = DateTime.parse(transaction['tanggal']);
-                  formattedDate =
-                      DateFormat('dd MMM yyyy', 'id_ID').format(date);
-                }
-                bool isIncome = transaction['jenis'] == 'pemasukan';
-                return Column(
-                  children: [
-                    GestureDetector(
-                      onTap: () =>
-                          _navigateToDetailTransaksi(context, transaction),
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: Color(0xFF2F253D),
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: Padding(
-                          padding: EdgeInsets.all(12),
-                          child: ExpenseItem(
-                            title: transaction['kategori'] ?? 'Uncategorized',
-                            amount: formattedDate,
-                            value: transaction['nilai'] != null
-                                ? 'Rp. ${NumberFormat.currency(locale: 'id', symbol: '', decimalDigits: 0).format(transaction['nilai'])}'
-                                : 'N/A',
-                            isIncome: isIncome,
-                          ),
-                        ),
-                      ),
-                    ),
-                    if (index < transactions.length - 1)
-                      Divider(
-                        color: Colors.white.withOpacity(0.2),
-                        height: 1,
-                        thickness: 1,
-                      ),
-                  ],
-                );
-              }).toList(),
-            ),
-          )
-        else
-          Center(
-            child: Text(
-              'Tidak ada transaksi',
-              style: TextStyle(color: Colors.white, fontSize: 14),
-            ),
+        Container(
+          padding: EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Color(0xFF2F253D),
+            borderRadius: BorderRadius.circular(15),
           ),
+          child: Column(
+            children: transactions.map((transaction) {
+              // Ubah format tanggal di sini
+              String formattedDate = 'No date';
+              if (transaction['tanggal'] != null) {
+                DateTime date = DateTime.parse(transaction['tanggal']);
+                formattedDate = DateFormat('dd-MMM-yyyy', 'id_ID').format(date);
+              }
+              
+              return Column(
+                children: [
+                  ExpenseItem(
+                    title: transaction['kategori'] ?? 'Uncategorized',
+                    amount: formattedDate,
+                    value: transaction['nilai'] != null
+                        ? 'Rp. ${NumberFormat.currency(locale: 'id', symbol: '', decimalDigits: 0).format(transaction['nilai'])}'
+                        : 'N/A',
+                    isIncome: transaction['jenis'] == 'pemasukan',
+                  ),
+                  SizedBox(height: 12),
+                ],
+              );
+            }).toList(),
+          ),
+        ),
       ],
     );
   }
@@ -855,26 +655,17 @@ class ExpenseItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Icon(
-          isIncome
-              ? CupertinoIcons.arrow_up_right
-              : CupertinoIcons.arrow_down_right,
-          color: isIncome ? Colors.green : Color(0xFFFF2F2F),
-          size: 25,
-        ),
-        SizedBox(width: 12),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(title, style: TextStyle(color: Colors.white, fontSize: 12)),
-              SizedBox(height: 4),
-              Text(amount,
-                  style: TextStyle(
-                      color: Colors.white.withOpacity(0.5), fontSize: 12)),
-            ],
-          ),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(title, style: TextStyle(color: Colors.white, fontSize: 12)),
+            SizedBox(height: 4),
+            Text(amount,
+                style: TextStyle(
+                    color: Colors.white.withOpacity(0.5), fontSize: 12)),
+          ],
         ),
         Text(
           value,
@@ -888,69 +679,80 @@ class ExpenseItem extends StatelessWidget {
   }
 }
 
-class CustomBottomNavBar extends StatefulWidget {
-  final VoidCallback onTambahPressed;
-
-  const CustomBottomNavBar({Key? key, required this.onTambahPressed})
-      : super(key: key);
-
+class PersistentBottomNavBar extends StatelessWidget {
   @override
-  _CustomBottomNavBarState createState() => _CustomBottomNavBarState();
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Color(0xFF4E4062),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 10,
+            offset: Offset(0, -5),
+          ),
+        ],
+      ),
+      child: SafeArea(
+        child: Padding(
+          padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              NavBarItem(icon: Icons.home, label: 'Beranda', isSelected: true),
+              NavBarItem(icon: Icons.history_outlined, label: 'Transaksi'),
+              Container(
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Colors.green,
+                ),
+                child: FloatingActionButton(
+                  onPressed: () {},
+                  child: Icon(Icons.add, color: Colors.white),
+                  backgroundColor: Colors.transparent,
+                  elevation: 0,
+                ),
+              ),
+              NavBarItem(icon: Icons.account_balance_wallet_rounded, label: 'Dompet'),
+              NavBarItem(icon: Icons.person, label: 'Akun'),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 }
 
-class _CustomBottomNavBarState extends State<CustomBottomNavBar> {
-  int _selectedIndex = 0;
+class NavBarItem extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final bool isSelected;
 
-  void _onItemTapped(int index) async {
-    if (index == 2) {
-      widget.onTambahPressed();
-    } else if (index == 4) {
-      try {
-        await Supabase.instance.client.auth.signOut();
-        Navigator.of(context).pushReplacementNamed('loginPage');
-      } catch (error) {
-        print('Error signing out: $error');
-      }
-    } else {
-      setState(() {
-        _selectedIndex = index;
-      });
-    }
-  }
+  const NavBarItem({
+    Key? key,
+    required this.icon,
+    required this.label,
+    this.isSelected = false,
+  }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    return BottomNavigationBar(
-      items: <BottomNavigationBarItem>[
-        BottomNavigationBarItem(
-          icon: Icon(Icons.home),
-          label: 'Beranda',
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(
+          icon,
+          color: isSelected ? Colors.white : Colors.grey,
         ),
-        BottomNavigationBarItem(
-          icon: Icon(Icons.history),
-          label: 'Transaksi',
-        ),
-        BottomNavigationBarItem(
-          icon: Icon(Icons.add_circle),
-          label: 'Tambah',
-        ),
-        BottomNavigationBarItem(
-          icon: Icon(Icons.account_balance_wallet),
-          label: 'Dompet',
-        ),
-        BottomNavigationBarItem(
-          icon: Icon(Icons.person),
-          label: 'Profil',
+        SizedBox(height: 3),
+        Text(
+          label,
+          style: TextStyle(
+            color: isSelected ? Colors.white : Colors.grey,
+            fontSize: 12,
+          ),
         ),
       ],
-      currentIndex: _selectedIndex,
-      selectedItemColor: Colors.white,
-      unselectedItemColor: Colors.grey.withOpacity(0.8),
-      onTap: _onItemTapped,
-      backgroundColor: Color(0xFF4E4062),
-      type: BottomNavigationBarType.fixed,
-      selectedFontSize: 12,
-      unselectedFontSize: 12,
     );
   }
 }
