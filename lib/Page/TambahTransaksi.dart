@@ -8,12 +8,12 @@ import 'dart:io';
 import '../main.dart';
 import '../services/notification_service.dart';
 
-class TaambahTransaksi extends StatefulWidget {
+class TambahTransaksi extends StatefulWidget {
   @override
-  _TaambahTransaksiState createState() => _TaambahTransaksiState();
+  _TambahTransaksiState createState() => _TambahTransaksiState();
 }
 
-class _TaambahTransaksiState extends State<TaambahTransaksi> {
+class _TambahTransaksiState extends State<TambahTransaksi> {
   final _formKey = GlobalKey<FormState>();
   final _kontrolerNilai = TextEditingController();
   final _kontrolerCatatan = TextEditingController();

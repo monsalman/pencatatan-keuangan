@@ -6,8 +6,15 @@ import 'package:intl/intl.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'dart:io';
+import 'DetailTransaksi.dart';
+import 'TambahTransaksi.dart';
 
-class HomePage extends StatelessWidget {
+class HomePage extends StatefulWidget {
+  @override
+  _HomePageState createState() => _HomePageState();
+}
+
+class _HomePageState extends State<HomePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -655,6 +662,28 @@ class _TransaksiState extends State<Transaksi> {
     }
   }
 
+  void _navigateToDetailTransaksi(
+      BuildContext context, Map<String, dynamic> transactionData) {
+    final transaction = Transaction(
+      id: transactionData['id'],
+      kategori: transactionData['kategori'] ?? 'Uncategorized',
+      nilai: transactionData['nilai'] ?? 0,
+      jenis: transactionData['jenis'] ?? '',
+      tanggal: transactionData['tanggal'] != null
+          ? DateTime.parse(transactionData['tanggal'])
+          : DateTime.now(),
+      catatan: transactionData['catatan'] ?? '',
+      imageUrl: transactionData['image_url'],
+    );
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => DetailTransaksi(transaction: transaction),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Column(
@@ -682,37 +711,65 @@ class _TransaksiState extends State<Transaksi> {
           ],
         ),
         SizedBox(height: 8),
-        Container(
-          padding: EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: Color(0xFF2F253D),
-            borderRadius: BorderRadius.circular(15),
+        if (transactions.isNotEmpty)
+          Container(
+            padding: EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Color(0xFF2F253D),
+              borderRadius: BorderRadius.circular(15),
+            ),
+            child: Column(
+              children: transactions.asMap().entries.map((entry) {
+                int index = entry.key;
+                var transaction = entry.value;
+                String formattedDate = 'No date';
+                if (transaction['tanggal'] != null) {
+                  DateTime date = DateTime.parse(transaction['tanggal']);
+                  formattedDate =
+                      DateFormat('dd MMM yyyy', 'id_ID').format(date);
+                }
+                bool isIncome = transaction['jenis'] == 'pemasukan';
+                return Column(
+                  children: [
+                    GestureDetector(
+                      onTap: () =>
+                          _navigateToDetailTransaksi(context, transaction),
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: Color(0xFF2F253D),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Padding(
+                          padding: EdgeInsets.all(12),
+                          child: ExpenseItem(
+                            title: transaction['kategori'] ?? 'Uncategorized',
+                            amount: formattedDate,
+                            value: transaction['nilai'] != null
+                                ? 'Rp. ${NumberFormat.currency(locale: 'id', symbol: '', decimalDigits: 0).format(transaction['nilai'])}'
+                                : 'N/A',
+                            isIncome: isIncome,
+                          ),
+                        ),
+                      ),
+                    ),
+                    if (index < transactions.length - 1)
+                      Divider(
+                        color: Colors.white.withOpacity(0.2),
+                        height: 1,
+                        thickness: 1,
+                      ),
+                  ],
+                );
+              }).toList(),
+            ),
+          )
+        else
+          Center(
+            child: Text(
+              'Tidak ada transaksi',
+              style: TextStyle(color: Colors.white, fontSize: 14),
+            ),
           ),
-          child: Column(
-            children: transactions.map((transaction) {
-              // Ubah format tanggal di sini
-              String formattedDate = 'No date';
-              if (transaction['tanggal'] != null) {
-                DateTime date = DateTime.parse(transaction['tanggal']);
-                formattedDate = DateFormat('dd-MMM-yyyy', 'id_ID').format(date);
-              }
-              
-              return Column(
-                children: [
-                  ExpenseItem(
-                    title: transaction['kategori'] ?? 'Uncategorized',
-                    amount: formattedDate,
-                    value: transaction['nilai'] != null
-                        ? 'Rp. ${NumberFormat.currency(locale: 'id', symbol: '', decimalDigits: 0).format(transaction['nilai'])}'
-                        : 'N/A',
-                    isIncome: transaction['jenis'] == 'pemasukan',
-                  ),
-                  SizedBox(height: 12),
-                ],
-              );
-            }).toList(),
-          ),
-        ),
       ],
     );
   }
@@ -784,11 +841,16 @@ class PersistentBottomNavBar extends StatelessWidget {
               Container(
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: Colors.green,
+                  color: WarnaSecondary,
                 ),
                 child: FloatingActionButton(
-                  onPressed: () {},
-                  child: Icon(Icons.add, color: Colors.white),
+                  onPressed: () async {
+                    final result = await Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => TambahTransaksi()),
+                    );
+                  },
+                  child: Icon(Icons.add, color: WarnaUtama),
                   backgroundColor: Colors.transparent,
                   elevation: 0,
                 ),
