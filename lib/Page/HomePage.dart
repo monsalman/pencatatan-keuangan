@@ -5,7 +5,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:intl/intl.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
-import 'dart:io'; // Add this import
+import 'dart:io';
 
 class HomePage extends StatelessWidget {
   @override
