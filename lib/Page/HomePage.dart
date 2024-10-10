@@ -45,11 +45,21 @@ class _BalanceSectionState extends State<BalanceSection> {
   final supabase = Supabase.instance.client;
   double totalBalance = 0;
   bool isBalanceVisible = true;
+  String _username = '';
 
   @override
   void initState() {
     super.initState();
+    _getUserInfo();
     fetchTotalBalance();
+  }
+  Future<void> _getUserInfo() async {
+    final user = supabase.auth.currentUser;
+    if (user != null) {
+      setState(() {
+        _username = user.userMetadata?['display_name'] ?? '';
+      });
+    }
   }
 
   Future<void> fetchTotalBalance() async {
@@ -96,7 +106,7 @@ class _BalanceSectionState extends State<BalanceSection> {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text(
-              'Hi, Username',
+              'Hi, $_username',
               style: TextStyle(
                 color: Colors.white,
                 fontSize: 22,
