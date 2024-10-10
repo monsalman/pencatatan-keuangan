@@ -4,6 +4,8 @@ import 'package:pencatatan_keuangan/main.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:intl/intl.dart';
 import 'package:intl/date_symbol_data_local.dart';
+import 'package:google_mobile_ads/google_mobile_ads.dart';
+import 'dart:io'; // Add this import
 
 class HomePage extends StatelessWidget {
   @override
@@ -11,28 +13,96 @@ class HomePage extends StatelessWidget {
     return Scaffold(
       backgroundColor: Color(0xFF252B48),
       body: SafeArea(
-        child: SingleChildScrollView(
-          child: Padding(
-            padding: EdgeInsets.all(16.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                BalanceSection(),
-                SizedBox(height: 20),
-                WalletSection(),
-                SizedBox(height: 20),
-                MonthlyReportSection(),
-                SizedBox(height: 20),
-                Pengeluaran(),
-                SizedBox(height: 20),
-                Transaksi(),
-              ],
+        child: Column(
+          children: [
+            AdBanner(),
+            Expanded(
+              child: SingleChildScrollView(
+                child: Padding(
+                  padding: EdgeInsets.fromLTRB(16.0, 5.0, 16.0, 16.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      BalanceSection(),
+                      SizedBox(height: 20),
+                      WalletSection(),
+                      SizedBox(height: 20),
+                      MonthlyReportSection(),
+                      SizedBox(height: 20),
+                      Pengeluaran(),
+                      SizedBox(height: 20),
+                      Transaksi(),
+                    ],
+                  ),
+                ),
+              ),
             ),
-          ),
+          ],
         ),
       ),
       bottomNavigationBar: PersistentBottomNavBar(),
     );
+  }
+}
+
+class AdBanner extends StatefulWidget {
+  @override
+  _AdBannerState createState() => _AdBannerState();
+}
+
+class _AdBannerState extends State<AdBanner> {
+  BannerAd? _bannerAd;
+  bool _isAdLoaded = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadAd();
+  }
+
+  void _loadAd() {
+    final adUnitId = Platform.isAndroid
+        // ? 'ca-app-pub-3940256099942544/6300978111'
+        // : 'ca-app-pub-3940256099942544/2934735716';
+        ? 'ca-app-pub-3564069642095127/5462088626'
+        : 'ca-app-pub-3564069642095127/9209761947';
+
+    _bannerAd = BannerAd(
+      adUnitId: adUnitId,
+      size: AdSize.banner,
+      request: AdRequest(),
+      listener: BannerAdListener(
+        onAdLoaded: (_) {
+          setState(() {
+            _isAdLoaded = true;
+          });
+        },
+        onAdFailedToLoad: (ad, error) {
+          ad.dispose();
+          print('Ad failed to load: $error');
+        },
+      ),
+    );
+
+    _bannerAd?.load();
+  }
+
+  @override
+  void dispose() {
+    _bannerAd?.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_isAdLoaded) {
+      return Container(
+        height: 60,
+        child: AdWidget(ad: _bannerAd!),
+      );
+    } else {
+      return SizedBox(height: 5);
+    }
   }
 }
 
