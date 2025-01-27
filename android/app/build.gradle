@@ -25,12 +25,12 @@ if (flutterVersionName == null) {
 
 android {
     namespace = "com.example.pencatatan_keuangan"
-    compileSdk = flutter.compileSdkVersion
+    compileSdk 34
     ndkVersion = flutter.ndkVersion
 
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_1_8
-        targetCompatibility = JavaVersion.VERSION_1_8
+        sourceCompatibility JavaVersion.VERSION_21
+        targetCompatibility JavaVersion.VERSION_21
     }
 
     defaultConfig {
@@ -39,7 +39,7 @@ android {
         // You can update the following values to match your application needs.
         // For more information, see: https://docs.flutter.dev/deployment/android#reviewing-the-gradle-build-configuration.
         minSdk = flutter.minSdkVersion
-        targetSdk = flutter.targetSdkVersion
+        targetSdk 34
         versionCode = flutterVersionCode.toInteger()
         versionName = flutterVersionName
     }
@@ -55,4 +55,10 @@ android {
 
 flutter {
     source = "../.."
+}
+
+kotlin {
+    jvmToolchain {
+        languageVersion.set(JavaLanguageVersion.of(17))
+    }
 }
