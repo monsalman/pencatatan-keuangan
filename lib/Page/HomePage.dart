@@ -15,6 +15,18 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
+  Future<void> _refreshData() async {
+    await Future.wait([
+      _balanceSectionKey.currentState?.fetchTotalBalance() ?? Future.value(),
+      _monthlyReportKey.currentState?.fetchMonthlyData() ?? Future.value(),
+      _transaksiKey.currentState?.fetchTransactions() ?? Future.value(),
+    ]);
+  }
+
+  final GlobalKey<_BalanceSectionState> _balanceSectionKey = GlobalKey();
+  final GlobalKey<_MonthlyReportSectionState> _monthlyReportKey = GlobalKey();
+  final GlobalKey<_TransaksiState> _transaksiKey = GlobalKey();
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -24,22 +36,28 @@ class _HomePageState extends State<HomePage> {
           children: [
             AdBanner(),
             Expanded(
-              child: SingleChildScrollView(
-                child: Padding(
-                  padding: EdgeInsets.fromLTRB(16.0, 5.0, 16.0, 16.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      BalanceSection(),
-                      SizedBox(height: 20),
-                      WalletSection(),
-                      SizedBox(height: 20),
-                      MonthlyReportSection(),
-                      SizedBox(height: 20),
-                      Pengeluaran(),
-                      SizedBox(height: 20),
-                      Transaksi(),
-                    ],
+              child: RefreshIndicator(
+                color: WarnaUtama,
+                backgroundColor: WarnaSecondary,
+                onRefresh: _refreshData,
+                child: SingleChildScrollView(
+                  physics: AlwaysScrollableScrollPhysics(),
+                  child: Padding(
+                    padding: EdgeInsets.fromLTRB(16.0, 5.0, 16.0, 16.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        BalanceSection(key: _balanceSectionKey),
+                        SizedBox(height: 20),
+                        WalletSection(),
+                        SizedBox(height: 20),
+                        MonthlyReportSection(key: _monthlyReportKey),
+                        SizedBox(height: 20),
+                        Pengeluaran(),
+                        SizedBox(height: 20),
+                        Transaksi(key: _transaksiKey),
+                      ],
+                    ),
                   ),
                 ),
               ),
@@ -114,6 +132,8 @@ class _AdBannerState extends State<AdBanner> {
 }
 
 class BalanceSection extends StatefulWidget {
+  const BalanceSection({Key? key}) : super(key: key);
+
   @override
   _BalanceSectionState createState() => _BalanceSectionState();
 }
@@ -279,6 +299,8 @@ class WalletItem extends StatelessWidget {
 }
 
 class MonthlyReportSection extends StatefulWidget {
+  const MonthlyReportSection({Key? key}) : super(key: key);
+
   @override
   _MonthlyReportSectionState createState() => _MonthlyReportSectionState();
 }
@@ -629,6 +651,8 @@ class ToggleButtons extends StatelessWidget {
 }
 
 class Transaksi extends StatefulWidget {
+  const Transaksi({Key? key}) : super(key: key);
+
   @override
   _TransaksiState createState() => _TransaksiState();
 }
