@@ -14,15 +14,32 @@ final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await MobileAds.instance.initialize();
-  final notificationService = NotificationService();
-  await notificationService.init();
-  await notificationService.showDailyReminder();
-
-  await Supabase.initialize(
-    url: 'https://wzvuymvcmzamnjltsipi.supabase.co',
-    anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind6dnV5bXZjbXphbW5qbHRzaXBpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Mjg0NTk5NjQsImV4cCI6MjA0NDAzNTk2NH0.OQrP0BluxleoHK0dv2JqdAhCiVIHU1BqeSKVaQbalOY',
-  );
+  
+  try {
+    // Inisialisasi MobileAds
+    await MobileAds.instance.initialize();
+    
+    // Inisialisasi Notification Service
+    final notificationService = NotificationService();
+    await notificationService.init();
+    
+    // Tambahkan try-catch untuk Supabase initialization
+    try {
+      await Supabase.initialize(
+        url: 'https://wzvuymvcmzamnjltsipi.supabase.co',
+        anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind6dnV5bXZjbXphbW5qbHRzaXBpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Mjg0NTk5NjQsImV4cCI6MjA0NDAzNTk2NH0.OQrP0BluxleoHK0dv2JqdAhCiVIHU1BqeSKVaQbalOY',
+      );
+      print('Supabase initialized successfully');
+    } catch (e) {
+      print('Error initializing Supabase: $e');
+    }
+    
+    // Setelah semua inisialisasi selesai
+    await notificationService.showDailyReminder();
+    
+  } catch (e) {
+    print('Error in initialization: $e');
+  }
 
   runApp(const MyApp());
 }
